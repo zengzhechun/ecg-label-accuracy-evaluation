@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>心电图诊断标签准确性验证 · ECG 标签准确性评价 · 报告门户</title>
+<style>
+:root{
+  --bg:#15171c; --bg2:#1b1e25; --surf:#22262e; --surf2:#2a2f39;
+  --line:#333a45; --txt:#e9e6df; --mut:#9aa1ad; --acc:#e0a458; --acc2:#f0b860;
+  --grn:#7fc08a; --red:#d98b86; --blu:#6fb3c9; --pink:#c98fb0; --grn2:#9ab87a; --pur:#b0a0c0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#13151a,#171a20 240px);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+  line-height:1.55;font-size:15px}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1140px;margin:0 auto;padding:0 22px 70px}
+header{background:radial-gradient(120% 160% at 20% -20%,#2a2533 0%,#16181e 60%);
+  border-bottom:1px solid var(--line);padding:42px 0 30px;margin-bottom:26px}
+header .wrap{padding-bottom:0}
+h1{margin:0 0 8px;font-size:27px;letter-spacing:.5px;font-weight:700}
+h1 .em{color:var(--acc2)}
+.sub{color:var(--mut);font-size:14px;max-width:760px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.chip{background:var(--surf);border:1px solid var(--line);border-radius:999px;
+  padding:7px 14px;font-size:13px;color:var(--mut)}
+.chip b{color:var(--txt);font-weight:600}
+nav{position:sticky;top:0;z-index:20;background:rgba(21,23,28,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);padding:10px 0}
+nav .wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.navlink{font-size:13.5px;color:var(--mut);padding:5px 4px;border-bottom:2px solid transparent;cursor:pointer}
+.navlink:hover{color:var(--txt)}
+.navlink.act{color:var(--acc2);border-bottom-color:var(--acc)}
+.sp{flex:1}
+.search{background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:7px 12px;
+  color:var(--txt);font-size:13.5px;min-width:200px;outline:none}
+.search:focus{border-color:var(--acc)}
+section{margin:34px 0}
+.sec-h{display:flex;align-items:baseline;gap:12px;margin:0 0 16px}
+.sec-h h2{font-size:20px;margin:0;font-weight:700}
+.sec-h .tag{font-size:12.5px;color:var(--mut);border-left:1px solid var(--line);padding-left:12px}
+/* coverage matrix */
+.matrix{width:100%;border-collapse:separate;border-spacing:0 8px}
+.matrix th,.matrix td{padding:11px 12px;text-align:center;font-size:13.5px}
+.matrix thead th{color:var(--mut);font-weight:600;border-bottom:1px solid var(--line)}
+.matrix tbody tr{background:var(--surf);border-radius:10px}
+.matrix tbody td:first-child{border-radius:10px 0 0 10px;text-align:left;font-weight:600}
+.matrix tbody td:last-child{border-radius:0 10px 10px 0}
+.dot{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;
+  font-size:14px;font-weight:700}
+.dot.ok{background:rgba(127,192,138,.16);color:var(--grn)}
+.dot.no{background:rgba(217,139,134,.12);color:var(--red)}
+.dbname{display:flex;align-items:center;gap:9px}
+.dbdot{width:11px;height:11px;border-radius:3px}
+/* db hero card */
+.dbcard{background:var(--surf);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:22px}
+.dbcard .hd{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(255,255,255,.03),transparent)}
+.dbcard .hd .nm{font-size:18px;font-weight:700}
+.dbcard .hd .sm{font-size:12.5px;color:var(--mut)}
+.dbcard .hd .sm b{color:var(--txt)}
+.dbcard .bar{height:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:13px;padding:16px 18px}
+.fcard{background:var(--surf2);border:1px solid var(--line);border-radius:11px;padding:13px 14px;
+  transition:.15s;display:flex;flex-direction:column;gap:6px;position:relative}
+.fcard:hover{border-color:var(--acc);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.fcard.miss{opacity:.5}
+.fcard .top{display:flex;align-items:center;gap:8px}
+.kbadge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.3px}
+.k-qmd{background:rgba(176,160,192,.18);color:var(--pur)}
+.k-html{background:rgba(111,179,201,.18);color:var(--blu)}
+.k-sim{background:rgba(224,164,88,.18);color:var(--acc2)}
+.k-docx{background:rgba(127,192,138,.18);color:var(--grn)}
+.k-code{background:rgba(159,184,122,.18);color:var(--grn2)}
+.k-data{background:rgba(201,143,176,.18);color:var(--pink)}
+.k-xlsx{background:rgba(224,164,88,.16);color:var(--acc)}
+.fcard .role{font-size:14px;font-weight:600;line-height:1.35}
+.fcard .note{font-size:12.3px;color:var(--mut);line-height:1.4}
+.fcard .meta{font-size:11.8px;color:var(--mut);margin-top:auto;display:flex;justify-content:space-between;align-items:center}
+.open{font-size:12px;color:var(--acc2);font-weight:600}
+.open::after{content:"  ↗"}
+.empty{padding:18px;color:var(--mut);font-size:13.5px;text-align:center;border:1px dashed var(--line);border-radius:10px}
+footer{border-top:1px solid var(--line);margin-top:40px;padding-top:20px;color:var(--mut);font-size:12.5px;line-height:1.7}
+footer code{background:var(--surf);padding:1px 6px;border-radius:5px;color:var(--txt)}
+.hide{display:none!important}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>心电图诊断标签准确性验证 · <span class="em">ECG 标签准确性评价 · 报告门户</span></h1>
+    <div class="sub">统一入口：按数据库（宁波 / PTB-XL / MIMIC）与跨库综合，索引全部 <b>QMD 源</b>、<b>HTML 交互报告</b>、<b>HTML 模拟器</b> 与 <b>Word 版</b> 文件。点击任意卡片即可在浏览器中打开对应文件。</div>
+    <div class="chips" id="chips"></div>
+  </div>
+</header>
+
+<nav>
+  <div class="wrap">
+    <span class="navlink act" data-f="all">全部</span>
+    <span class="navlink" data-f="宁波">宁波</span>
+    <span class="navlink" data-f="PTB-XL">PTB-XL</span>
+    <span class="navlink" data-f="MIMIC">MIMIC</span>
+    <span class="navlink" data-f="综合">跨库综合</span>
+    <span class="navlink" data-f="数据">数据源</span>
+    <span class="sp"></span>
+    <input class="search" id="search" placeholder="搜索报告名 / 类型 / 关键词…">
+  </div>
+</nav>
+
+<div class="wrap">
+  <section id="matrix-sec">
+    <div class="sec-h"><h2>覆盖率矩阵</h2><span class="tag">三库 × 四类交付物</span></div>
+    <table class="matrix" id="matrix"></table>
+    <div class="legend">
+      <span><span class="dot ok">✓</span> 已交付</span>
+      <span><span class="dot no">✗</span> 暂无（见下方说明）</span>
+      <span>提示：宁波 Word 版由跨库综合报告 v15.0（含宁波主分析集章节）承担。</span>
+    </div>
+  </section>
+
+  <div id="sections"></div>
+
+  <footer>
+    <div><b>使用说明</b>：本门户为单一自包含 HTML，所有链接均为相对路径，请在本项目根目录（<code>诊断标签准确性验证论文/</code>）下通过浏览器打开。点击卡片在<b>新标签页</b>打开对应文件；Word / QMD / xlsx 将调用本机关联程序。</div>
+    <div style="margin-top:8px"><b>目录现状</b>：三库报告分别位于 <code>02_分析报告/当前报告/</code> 下的 <code>PTB-XL分析/</code>、<code>MIMIC分析/</code>（宁波置于当前报告根）；模拟器集中于 <code>02_分析报告/交互可视化/</code>（PTB-XL 模拟器随其分析目录）。原始数据在 <code>01_数据/专家审阅/</code>。</div>
+    <div style="margin-top:8px" id="genline"></div>
+  </footer>
+</div>
+
+<script>
+const DATA = [{"path": "reports/KimiWork_宁波标签质量综合分析_v8.0.html", "db": "宁波", "kind": "html", "role": "宁波标签质量综合分析主报告（v8.0）", "note": "去重后 623 例 / 主分析集 613 例", "size": "24.5 MB", "mtime": "2026-07-22", "href": "reports/KimiWork_宁波标签质量综合分析_v8.0.html"}, {"path": "reports/KimiWork_v15.0_标签噪声容忍度分析.html", "db": "综合", "kind": "html", "role": "⭐ 标签噪声容忍度分析（v15.0 · 三库综合）", "note": "错误分类学 + 噪声容忍度 + 三库对照", "size": "16.5 MB", "mtime": "2026-07-29", "href": "reports/KimiWork_v15.0_标签噪声容忍度分析.html"}, {"path": "reports/MIMIC标签噪声分析.html", "db": "MIMIC", "kind": "html", "role": "MIMIC-IV-ECG 标签噪声分析", "note": "1000 例随机抽样 · 三库对照", "size": "5.0 MB", "mtime": "2026-07-30", "href": "reports/MIMIC标签噪声分析.html"}, {"path": "reports/PTB-XL标签质量分析.html", "db": "PTB-XL", "kind": "html", "role": "PTB-XL 标签质量分析", "note": "674 例 · 含图表资源文件夹", "size": "184 KB", "mtime": "2026-07-30", "href": "reports/PTB-XL标签质量分析.html"}, {"path": "reports/PTB-XL双阅一致性分析.html", "db": "PTB-XL", "kind": "html", "role": "PTB-XL 双阅一致性分析", "note": "Dawid–Skene / 贝叶斯 · 标注者一致性", "size": "145 KB", "mtime": "2026-07-30", "href": "reports/PTB-XL双阅一致性分析.html"}, {"path": "reports/核心心律失常错误子集分析.html", "db": "综合", "kind": "html", "role": "核心心律失常诊断错误/缺失子集分析", "note": "子集维度", "size": "3.1 MB", "mtime": "2026-07-30", "href": "reports/核心心律失常错误子集分析.html"}, {"path": "reports/脏标签处理与对抗方法_综合研究报告.html", "db": "综合", "kind": "html", "role": "⭐ 脏标签处理与对抗方法·综合研究报告", "note": "文献综述 + 市场调研 + 交互模拟器（53 篇文献）", "size": "92 KB", "mtime": "2026-08-02", "href": "reports/脏标签处理与对抗方法_综合研究报告.html"}, {"path": "simulators/KimiWork_v15_标签噪声模拟器.html", "db": "综合", "kind": "sim", "role": "标签噪声模拟器（v15 · 含宁波+PTB-XL）", "note": "衰减沙盘 / 错误率阈值推演 / 核心心律失常子集", "size": "160 KB", "mtime": "2026-07-30", "href": "simulators/KimiWork_v15_标签噪声模拟器.html"}, {"path": "simulators/KimiWork_MIMIC_标签噪声模拟器.html", "db": "MIMIC", "kind": "sim", "role": "MIMIC 标签噪声模拟器", "note": "6 模块：重复/准确性/分布/三库对照/词汇", "size": "49 KB", "mtime": "2026-07-30", "href": "simulators/KimiWork_MIMIC_标签噪声模拟器.html"}, {"path": "simulators/KimiWork_PTBXL标签噪声模拟器_v2.html", "db": "PTB-XL", "kind": "sim", "role": "PTB-XL 标签噪声仿真器（v2）", "note": "标签分布 / 噪声注入 / 双阅冲突", "size": "87 KB", "mtime": "2026-07-30", "href": "simulators/KimiWork_PTBXL标签噪声模拟器_v2.html"}];
+const DB_META = {"宁波": {"sub": "公开心电图库 · 专家审阅", "sample": "去重 623 · 主集 613", "color": "#e0a458"}, "PTB-XL": {"sub": "PTB-XL · 含双阅标注", "sample": "674 例", "color": "#6fb3c9"}, "MIMIC": {"sub": "MIMIC-IV · 随机抽样", "sample": "1000 例", "color": "#c98fb0"}, "综合": {"sub": "跨库综合 / 子集分析", "sample": "三库对照", "color": "#9ab87a"}};
+const KIND_LABEL = {qmd:"QMD 源",html:"HTML 报告",sim:"HTML 模拟器",docx:"Word",code:"脚本",data:"数据快照",xlsx:"数据表"};
+const KIND_ORDER = ["qmd","html","sim","docx","code","data","xlsx"];
+const DB_ORDER = ["宁波","PTB-XL","MIMIC","综合","数据"];
+const KIND_COLOR = {qmd:"var(--pur)",html:"var(--blu)",sim:"var(--acc2)",docx:"var(--grn)",code:"var(--grn2)",data:"var(--pink)",xlsx:"var(--acc)"};
+
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
+
+// chips
+(function(){
+  const c=document.getElementById('chips');
+  const dbs=["宁波","PTB-XL","MIMIC"];
+  const tot=new Set(DATA.map(d=>d.path)).size;
+  const sims=DATA.filter(d=>d.kind==='sim').length;
+  const rep=DATA.filter(d=>d.kind==='html'||d.kind==='docx').length;
+  const add=(t)=>{const s=el('span','chip',t);c.appendChild(s);};
+  add('数据库 '+'3');
+  add('唯一文件 '+tot);
+  add('HTML 报告 '+(DATA.filter(d=>d.kind==='html').length));
+  add('模拟器 '+sims);
+  add('Word '+(DATA.filter(d=>d.kind==='docx').length));
+  add('更新 '+DATA.reduce((m,d)=>d.mtime>m?d.mtime:m,'') );
+})();
+
+// coverage matrix
+(function(){
+  const t=document.getElementById('matrix');
+  const thead=el('thead');const htr=el('tr');
+  htr.appendChild(el('th','', '数据库'));
+  ['qmd','html','sim','docx'].forEach(k=>{const th=el('th','',KIND_LABEL[k]);htr.appendChild(th);});
+  thead.appendChild(htr);t.appendChild(thead);
+  const tb=el('tbody');
+  ["宁波","PTB-XL","MIMIC"].forEach(db=>{
+    const tr=el('tr');
+    const td0=el('td');
+    const nm=el('div','dbname');
+    const dot=el('span','dbdot');dot.style.background=DB_META[db].color;
+    nm.appendChild(dot);nm.appendChild(el('span','',db));
+    td0.appendChild(nm);tr.appendChild(td0);
+    ['qmd','html','sim','docx'].forEach(k=>{
+      const items=DATA.filter(d=>d.db===db&&d.kind===k&&!d.missing);
+      const td=el('td');
+      if(items.length){const d=el('span','dot ok','✓');d.title=items.map(i=>i.role).join('\n');td.appendChild(d);
+        if(items.length>1){const n=el('span','', ' ×'+items.length);n.style.color='var(--mut)';n.style.fontSize='11px';td.appendChild(n);}
+      }else{td.appendChild(el('span','dot no','✗'));}
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+})();
+
+// sections
+const secWrap=document.getElementById('sections');
+function buildSections(){
+  secWrap.innerHTML='';
+  DB_ORDER.forEach(db=>{
+    const items=DATA.filter(d=>d.db===db);
+    if(!items.length)return;
+    const sec=el('section');sec.id='sec-'+db;
+    const h=el('div','sec-h');
+    h.appendChild(el('h2','',db));
+    if(DB_META[db]){const tag=el('span','tag', DB_META[db].sub+' · '+DB_META[db].sample);h.appendChild(tag);}
+    sec.appendChild(h);
+    if(["宁波","PTB-XL","MIMIC"].includes(db)){
+      const card=el('div','dbcard');
+      const hd=el('div','hd');
+      const nm=el('div');nm.style.flex='1';
+      const t1=el('div','nm',db);nm.appendChild(t1);
+      const t2=el('div','sm','');
+      t2.innerHTML='<b>'+(DB_META[db]?DB_META[db].sample:'')+'</b> · '+(DB_META[db]?DB_META[db].sub:'');
+      nm.appendChild(t2);hd.appendChild(nm);
+      const bar=el('div','bar');bar.style.background=DB_META[db].color;hd.appendChild(bar);
+      card.appendChild(hd);
+      const grid=el('div','grid');grid.dataset.db=db;
+      KIND_ORDER.forEach(k=>{
+        items.filter(d=>d.kind===k).forEach(d=>grid.appendChild(fileCard(d)));
+      });
+      card.appendChild(grid);sec.appendChild(card);
+    }else{
+      const grid=el('div','grid');grid.dataset.db=db;
+      items.sort((a,b)=>KIND_ORDER.indexOf(a.kind)-KIND_ORDER.indexOf(b.kind));
+      items.forEach(d=>grid.appendChild(fileCard(d)));
+      sec.appendChild(grid);
+    }
+    secWrap.appendChild(sec);
+  });
+}
+function fileCard(d){
+  const c=el('a','fcard'+(d.missing?' miss':''));
+  if(d.href)c.href=d.href;c.target='_blank';c.rel='noopener';
+  const top=el('div','top');
+  const b=el('span','kbadge k-'+d.kind,KIND_LABEL[d.kind]||d.kind);
+  top.appendChild(b);top.appendChild(el('span','',d.mtime));
+  c.appendChild(top);
+  c.appendChild(el('div','role',d.role));
+  if(d.note)c.appendChild(el('div','note',d.note));
+  const meta=el('div','meta');
+  meta.appendChild(el('span','',d.size));
+  if(!d.missing)meta.appendChild(el('span','open','打开'));
+  c.appendChild(meta);
+  return c;
+}
+buildSections();
+
+// filter + search
+const navlinks=[...document.querySelectorAll('.navlink')];
+let curFilter='all';
+navlinks.forEach(l=>l.addEventListener('click',()=>{
+  navlinks.forEach(x=>x.classList.remove('act'));l.classList.add('act');
+  curFilter=l.dataset.f;apply();
+}));
+document.getElementById('search').addEventListener('input',apply);
+function apply(){
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  document.querySelectorAll('.grid').forEach(g=>{
+    const db=g.dataset.db;
+    let any=false;
+    [...g.children].forEach(card=>{
+      const txt=card.textContent.toLowerCase();
+      const okDb=(curFilter==='all'||db===curFilter);
+      const okQ=(!q||txt.includes(q));
+      const show=okDb&&okQ;
+      card.classList.toggle('hide',!show);
+      if(show)any=true;
+    });
+    const sec=g.closest('section');
+    if(sec){const om=sec.querySelector('.empty');if(om)om.remove();
+      if(!any){const e=el('div','empty','该筛选条件下无匹配文件');sec.appendChild(e);}
+    }
+  });
+  // hide matrix section when filtering
+  document.getElementById('matrix-sec').classList.toggle('hide', curFilter!=='all'||q!=='');
+}
+document.getElementById('genline').textContent='门户生成于 '+'2026-08-05 12:00'+' · 共索引 '+new Set(DATA.map(d=>d.path)).size+' 个唯一文件（'+DATA.length+' 条跨区索引，相对路径，需置于项目根目录打开）。';
+</script>
+</body>
+</html>

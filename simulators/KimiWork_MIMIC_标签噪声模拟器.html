@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MIMIC 标签噪声分析 · 模拟器</title>
+<style>
+:root{
+  --bg:#1c1f2a; --bg2:#252836;
+  --panel:rgba(40,46,62,0.72); --panel2:rgba(56,62,80,0.78);
+  --ink:#f5efdc; --dim:#c2b89c; --dim2:#9c9580;
+  --line:rgba(255,180,84,0.22);
+  --pri:#ffb454; --pri2:#ffd09a;
+  --acc:#ff7ab6; --acc2:#ffb3d6;
+  --good:#5fe3a1; --good2:#a8f0c8;
+  --warn:#ffd166;
+  --bad:#ff5757;  --bad2:#ffb0b0;
+  --sky:#4cc7ff; --sky2:#a0e1ff;
+  --grape:#c8a8ff;
+  --gold:#f5b942;
+  --font:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font);}
+body{overflow-x:hidden;background:radial-gradient(ellipse at 20% 0%,#2b2438 0%,var(--bg) 55%),radial-gradient(ellipse at 100% 100%,#2a2f3d 0%,var(--bg) 60%);}
+#bg{position:fixed;inset:0;z-index:0;opacity:0.4;}
+.wrap{position:relative;z-index:1;max-width:1220px;margin:0 auto;padding:0 18px 80px;}
+header.top{position:relative;z-index:1;padding:32px 18px 6px;max-width:1220px;margin:0 auto;}
+header.top h1{font-size:29px;margin:0;letter-spacing:1px;
+  background:linear-gradient(90deg,var(--pri),var(--sky),var(--good));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 22px rgba(255,180,84,0.18);}
+header.top p.sub{color:var(--dim);margin:8px 0 0;font-size:13.5px;line-height:1.7;}
+header.top .badge{display:inline-block;margin-top:10px;padding:4px 12px;border:1px solid var(--line);
+  border-radius:20px;font-size:12px;color:var(--pri);background:rgba(255,180,84,0.07);}
+nav.tabs{position:sticky;top:0;z-index:5;display:flex;gap:8px;flex-wrap:wrap;
+  padding:12px 18px;margin:14px auto 0;max-width:1220px;
+  background:rgba(28,31,42,0.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+nav.tabs button{flex:1;min-width:150px;cursor:pointer;border:1px solid var(--line);
+  background:var(--panel);color:var(--dim);padding:11px 10px;border-radius:12px;
+  font-size:13.5px;font-family:var(--font);transition:.18s;letter-spacing:.5px;}
+nav.tabs button .n{font-family:var(--mono);color:var(--pri);margin-right:6px;font-size:12px;}
+nav.tabs button:hover{color:var(--ink);border-color:rgba(255,180,84,0.45);}
+nav.tabs button.active{color:#2a1a05;background:linear-gradient(120deg,var(--pri),var(--pri2));
+  border-color:transparent;box-shadow:0 0 22px rgba(255,180,84,0.35);font-weight:700;}
+section.mod{display:none;margin-top:22px;animation:fade .4s ease;}
+section.mod.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.lead{color:var(--dim);font-size:13.5px;line-height:1.75;margin:0 0 16px;
+  border-left:3px solid var(--sky);padding:6px 0 6px 14px;background:rgba(76,199,255,0.05);border-radius:0 8px 8px 0;}
+.lead b{color:var(--pri2)}
+.grid{display:grid;gap:16px;}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:18px 18px 16px;backdrop-filter:blur(6px);box-shadow:0 8px 28px rgba(0,0,0,0.32);}
+.panel h3{margin:0 0 4px;font-size:15.5px;letter-spacing:.5px;}
+.panel h3 .tag{font-family:var(--mono);font-size:11px;color:var(--pri);
+  border:1px solid var(--line);padding:1px 7px;border-radius:8px;margin-left:8px;vertical-align:middle;}
+.panel .desc{color:var(--dim);font-size:12.5px;margin:0 0 14px;line-height:1.65;}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;}
+.tile{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:13px 14px;text-align:center;}
+.tile .v{font-family:var(--mono);font-size:25px;font-weight:700;line-height:1.1;}
+.tile .l{font-size:11.5px;color:var(--dim);margin-top:5px;}
+.tile.pri .v{color:var(--pri)} .tile.acc .v{color:var(--acc)} .tile.good .v{color:var(--good)}
+.tile.warn .v{color:var(--warn)} .tile.bad .v{color:var(--bad)} .tile.sky .v{color:var(--sky)} .tile.grape .v{color:var(--grape)}
+svg{display:block;width:100%;height:auto;}
+#tooltip{position:fixed;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s;
+  background:rgba(20,18,12,0.96);border:1px solid var(--pri);border-radius:9px;
+  padding:9px 12px;font-size:12.5px;line-height:1.55;max-width:320px;
+  box-shadow:0 0 22px rgba(255,180,84,0.28);color:var(--ink);}
+#tooltip b{color:var(--pri)}
+.ctl{margin:10px 0;}
+.ctl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:5px;}
+.ctl label .val{font-family:var(--mono);color:var(--pri);font-weight:700;}
+.btn{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);
+  padding:9px 15px;border-radius:11px;font-size:13px;font-family:var(--font);transition:.15s;}
+.btn:hover{border-color:var(--pri);box-shadow:0 0 14px rgba(255,180,84,0.3);}
+.btn.amber{background:linear-gradient(120deg,var(--pri),var(--pri2));color:#2a1a05;border:none;font-weight:700;}
+.btn.toggle.on{background:linear-gradient(120deg,var(--good),var(--good2));color:#04210f;border:none;font-weight:700;}
+select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;
+  padding:7px 10px;font-size:13px;font-family:var(--font);}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--dim);margin-top:8px;}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+.note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:10px;
+  border-top:1px dashed var(--line);padding-top:10px;}
+.note b{color:var(--warn);}
+.kpi{font-family:var(--mono);}
+.kpi.big{font-size:21px;font-weight:700;}
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
+table.tbl th,table.tbl td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;}
+table.tbl th{background:rgba(255,180,84,0.10);color:var(--pri2);font-weight:600;position:sticky;top:0;}
+table.tbl tr:nth-child(even){background:rgba(255,255,255,0.025);}
+table.tbl td.num{font-family:var(--mono);text-align:right;}
+.tag-exp{display:inline-block;padding:1px 7px;border-radius:7px;font-size:11px;
+  background:rgba(200,168,255,0.18);color:var(--grape);border:1px solid rgba(200,168,255,0.4);}
+.search{width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--ink);font-size:13px;font-family:var(--font);margin-bottom:10px;}
+canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,0.55);}
+footer{position:relative;z-index:1;text-align:center;color:var(--dim);font-size:12px;margin-top:40px;line-height:1.7;}
+@media(max-width:760px){header.top h1{font-size:22px}.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<header class="top">
+  <h1>MIMIC 心电图标签噪声分析 · 交互模拟器</h1>
+  <p class="sub">基于 <b style="color:var(--pri)">MIMIC 合并-7.17（专家审阅版）</b> 的标签质量分析，并与 <b style="color:var(--sky)">宁波</b>、<b style="color:var(--acc)">PTB-XL</b> 两库做同等维度对照。
+  本模拟器聚焦：数据重复性、标签准确性、诊断分布、三库差异，以及跨库诊断词汇对照（含专家补充词汇）。
+  <br/><span style="color:var(--dim2);font-size:12px;">命名约定：<b>准确</b>=原始标签与专家判定一致；<b>不准确</b>=不一致（correctLabel 给出纠正）；<b>未判定</b>=专家未给出最终判定。</span></p>
+  <span class="badge" id="hdr-badge">数据底座加载中…</span>
+</header>
+
+<nav class="tabs">
+  <button data-tab="m1" class="active"><span class="n">01</span>概览</button>
+  <button data-tab="m2"><span class="n">02</span>重复检查</button>
+  <button data-tab="m3"><span class="n">03</span>标签准确性</button>
+  <button data-tab="m4"><span class="n">04</span>诊断分布</button>
+  <button data-tab="m5"><span class="n">05</span>三库对照</button>
+  <button data-tab="m6"><span class="n">06</span>词汇对照</button>
+</nav>
+
+<div class="wrap">
+  <!-- ============ m1 概览 ============ -->
+  <section id="m1" class="mod active">
+    <p class="lead">主分析集 <b id="m1-n"></b> 例（MIMIC 经抽样后 <b>关键 ID 全唯一、无记录级重复</b>，直接以全量作为主分析集）。标注者 4/5 各 500 例；抽样方法为<b>简单随机抽样</b>（自 MIMIC-IV 原始库）。</p>
+    <div class="tiles" id="m1-tiles"></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
+      <div class="panel"><h3>数据重复性结论 <span class="tag">dedup</span></h3>
+        <p class="desc" id="m1-dedup"></p></div>
+      <div class="panel"><h3>抽样代表性提示 <span class="tag">sampling</span></h3>
+        <p class="desc" id="m1-sampling"></p></div>
+    </div>
+    <div class="note" id="m1-note"></div>
+  </section>
+
+  <!-- ============ m2 重复检查 ============ -->
+  <section id="m2" class="mod">
+    <p class="lead">对 <b>全字段 / annotation_id / id / subject_id / study_id / report 文本</b> 五类关键字段做重复核查。结论：<b>不存在真实重复记录</b>；report 文本重复源于自由文本标签的天然集中度，非导出缺陷。</p>
+    <div class="panel"><h3>重复检查明细 <span class="tag">findings</span></h3>
+      <div style="overflow:auto;max-height:360px"><table class="tbl" id="m2-tbl"></table></div>
+      <div class="note" id="m2-rec"></div>
+    </div>
+    <div class="panel" style="margin-top:16px"><h3>频次最高的重复 ECG 文本（Top 12） <span class="tag">集中度</span></h3>
+      <canvas id="m2-bars" class="viz" height="288"></canvas>
+    </div>
+  </section>
+
+  <!-- ============ m3 标签准确性 ============ -->
+  <section id="m3" class="mod">
+    <p class="lead">MIMIC 标签准确性分布与「不准确」性质剖析。MIMIC 不准确率显著高于宁波/PTB-XL，主要源于<b>遗漏型错误</b>（原始标签漏报次要发现）。</p>
+    <div class="grid" style="grid-template-columns:300px 1fr">
+      <div class="panel"><h3>标签准确性构成</h3><canvas id="m3-donut" class="viz" height="300"></canvas>
+        <div class="legend"><i style="background:var(--good)"></i>准确 <i style="background:var(--bad)"></i>不准确 <i style="background:var(--dim2)"></i>未判定</div>
+      </div>
+      <div class="panel"><h3>不准确性质 <span class="tag">omission vs commission</span></h3>
+        <div class="tiles" id="m3-tiles"></div>
+        <p class="desc" id="m3-nature" style="margin-top:12px"></p>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px"><h3>常见诊断术语 × 准确性（Top 12） <span class="tag">term × accuracy</span></h3>
+      <canvas id="m3-term" class="viz" height="312"></canvas>
+    </div>
+  </section>
+
+  <!-- ============ m4 诊断分布 ============ -->
+  <section id="m4" class="mod">
+    <p class="lead">MIMIC 诊断文本（report_cn 中文 + report 英文）解析后的术语分布、年龄结构与标注者构成。</p>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="panel"><h3>Top 中文诊断术语</h3><canvas id="m4-zh" class="viz" height="330"></canvas></div>
+      <div class="panel"><h3>Top 英文诊断术语</h3><canvas id="m4-en" class="viz" height="330"></canvas></div>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
+      <div class="panel"><h3>年龄分层</h3><canvas id="m4-age" class="viz" height="200"></canvas></div>
+      <div class="panel"><h3>标注者构成（4 / 5 各 500）</h3><canvas id="m4-ann" class="viz" height="160"></canvas></div>
+    </div>
+  </section>
+
+  <!-- ============ m5 三库对照 ============ -->
+  <section id="m5" class="mod">
+    <p class="lead">宁波 / PTB-XL / MIMIC 三库在<b>标签准确性、人口学、抽样方法</b>上的同等维度对照。</p>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="panel"><h3>标签准确性对照（主集不准确率）</h3><canvas id="m5-acc" class="viz" height="280"></canvas>
+        <div class="legend"><i style="background:var(--sky)"></i>MIMIC <i style="background:var(--acc)"></i>宁波 <i style="background:var(--pri)"></i>PTB-XL</div>
+      </div>
+      <div class="panel"><h3>人口学对照</h3><div id="m5-demo"></div></div>
+    </div>
+    <div class="panel" style="margin-top:16px"><h3>三库概览与抽样方法</h3>
+      <div style="overflow:auto"><table class="tbl" id="m5-ov"></table></div>
+    </div>
+    <div class="panel" style="margin-top:16px"><h3>抽样代表性评估 <span class="tag">关键方法学</span></h3>
+      <p class="desc" id="m5-samp"></p></div>
+  </section>
+
+  <!-- ============ m6 词汇对照 ============ -->
+  <section id="m6" class="mod">
+    <p class="lead">三库诊断标签对照词表（含<b>专家补充词汇</b>）。MIMIC 原始仅含英文自由文本，其中文术语（report_cn）与纠正标签（correctLabel）均由本项目专家审阅时增补——构成跨库可比的中文诊断层。计数按关键词命中（同一病例计 1 次）。</p>
+    <input class="search" id="m6-search" placeholder="搜索诊断概念 / 中文 / 英文（如 房颤、atrial、AFIB、WPW）…"/>
+    <div class="panel" style="overflow:auto;max-height:560px">
+      <table class="tbl" id="m6-tbl"></table>
+    </div>
+    <div class="note" id="m6-note"></div>
+  </section>
+</div>
+
+<footer>
+  MIMIC 标签噪声分析 · 交互模拟器 &nbsp;|&nbsp; 数据：MIMIC 合并-7.17（专家审阅版，1000 例） &nbsp;|&nbsp; 对照：宁波去重 613 主集 / PTB-XL 674 例<br/>
+  所有统计由 <code>analyze_mimic.py</code> 从原始 Excel 复算并内联；本页为离线单文件，无外部依赖。
+</footer>
+
+<div id="tooltip"></div>
+
+<script>
+const M = {
+ "dedup": {
+  "n_total": 1000,
+  "findings": [
+   {
+    "key": "全字段完全重复",
+    "rule": "13 列全部相同",
+    "conf": "高",
+    "clusters": 0,
+    "extra_rows": 0,
+    "note": "未发现整行完全重复。"
+   },
+   {
+    "key": "annotation_id 重复",
+    "rule": "标注平台唯一标注ID相同",
+    "conf": "高",
+    "clusters": 0,
+    "extra_rows": 0,
+    "note": "annotation_id 全部唯一，无重复。"
+   },
+   {
+    "key": "id 重复",
+    "rule": "顺序ID相同",
+    "conf": "高",
+    "clusters": 0,
+    "extra_rows": 0,
+    "note": "id 全部唯一。"
+   },
+   {
+    "key": "report 英文文本重复(诊断集中度)",
+    "rule": "英文 ECG 描述完全相同",
+    "conf": "中（需结合 subject_id 判断）",
+    "clusters": 75,
+    "extra_rows": 419,
+    "note": "⚠ 但 1000 行的 subject_id 全部唯一，说明这些「相同文本」来自【不同患者】共享的常见 ECG 结论（如 'Sinus rhythm,Normal ECG' 出现 181 次）。对自由文本标签而言属正常现象，【不是重复记录，不应去重】；它反映的是 MIMIC 诊断文本的高度集中。"
+   },
+   {
+    "key": "report_cn 中文文本重复(诊断集中度)",
+    "rule": "中文 ECG 描述完全相同",
+    "conf": "中（需结合 subject_id 判断）",
+    "clusters": 74,
+    "extra_rows": 424,
+    "note": "与 report 英文重复同源：同一中文结论（如「窦性心律，正常心电图」）跨不同患者重复出现，非记录级重复。"
+   },
+   {
+    "key": "subject_id+study_id 重复",
+    "rule": "同患者同次住院出现≥2条",
+    "conf": "中（同次住院多份心电图或重复导出）",
+    "clusters": 0,
+    "extra_rows": 0,
+    "note": "无同患者同次住院重复。"
+   },
+   {
+    "key": "subject_id 重复（基线）",
+    "rule": "同一 MIMIC 患者(subject_id)出现多条",
+    "conf": "信息项",
+    "clusters": 0,
+    "extra_rows": 0,
+    "note": "MIMIC 为 ICU 队列，同患者多次心电图属正常；本样本 1000 行 subject_id 全部唯一，即 1000 例来自 1000 名不同患者，不存在患者级冗余。"
+   }
+  ],
+  "detail_tables": {
+   "report_top_repeats": [
+    {
+     "report": "Sinus rhythm,Normal ECG",
+     "n": 181
+    },
+    {
+     "report": "Sinus rhythm",
+     "n": 46
+    },
+    {
+     "report": "Sinus tachycardia,Normal ECG except for rate",
+     "n": 17
+    },
+    {
+     "report": "Sinus bradycardia,Normal ECG except for rate",
+     "n": 16
+    },
+    {
+     "report": "Sinus arrhythmia,Normal ECG",
+     "n": 12
+    },
+    {
+     "report": "Sinus rhythm.,Normal ECG",
+     "n": 11
+    },
+    {
+     "report": "Sinus tachycardia",
+     "n": 8
+    },
+    {
+     "report": "Sinus rhythm,Probable left atrial enlargement",
+     "n": 7
+    },
+    {
+     "report": "Sinus rhythm,Poor R wave progression - probable normal variant,Borderline ECG",
+     "n": 7
+    },
+    {
+     "report": "Sinus rhythm,ST junctional depression is nonspecific,Borderline ECG",
+     "n": 7
+    },
+    {
+     "report": "Sinus rhythm,rSr'(V1) - probable normal variant,Normal ECG",
+     "n": 6
+    },
+    {
+     "report": "Ventricular pacing,Pacemaker rhythm - no further analysis,Abnormal ECG",
+     "n": 6
+    }
+   ]
+  },
+  "conclusion": "经全字段、annotation_id、id、subject_id、study_id 五类关键字段核查，MIMIC 合并-7.17 的 1000 行记录【不存在真实的重复记录】（所有强重复信号字段均唯一）。report/report_cn 的「文本重复」源于自由文本 ECG 标签的天然集中度（常见结论如窦性心律/正常心电图跨患者大量重复），属抽样样本的真实诊断分布特征，而非导出缺陷，【不应作为重复剔除】。因此本分析直接以全量 1000 例作为 MIMIC 主分析集，主键采用 annotation_id。",
+  "recommendation": "① 无需对 MIMIC 做记录级去重（关键ID全唯一）；② 若后续与其他库合并做患者级分析，应以 subject_id 聚类并报告跨患者稳健性；③ report 文本高重复度提示：简单随机抽样下，少数高频诊断主导了标签空间，稀有诊断(如 Brugada/预激/尖端扭转)在 1000 例中被严重低估，建议补充按诊断分层抽样以校准罕见诊断的错误率估计。"
+ },
+ "stats": {
+  "n": 1000,
+  "label": {
+   "acc": 230,
+   "ina": 760,
+   "und": 10,
+   "acc_p": 23.0,
+   "ina_p": 76.0,
+   "und_p": 1.0,
+   "acc_ci": [
+    20.5,
+    25.7
+   ],
+   "ina_ci": [
+    73.3,
+    78.5
+   ],
+   "und_ci": [
+    0.5,
+    1.8
+   ]
+  },
+  "correctlabel_fill": {
+   "ina_n": 760,
+   "filled": 760,
+   "fill_p": 100.0
+  },
+  "demo": {
+   "age_mean": 57.5,
+   "age_median": 59.0,
+   "age_min": 18.0,
+   "age_max": 91.0,
+   "age_p25": 44.0,
+   "age_p75": 72.0,
+   "male": 489,
+   "female": 503,
+   "male_p": 48.9
+  },
+  "age_bands": [
+   {
+    "band": "<18",
+    "n": 0,
+    "p": 0.0
+   },
+   {
+    "band": "18-39",
+    "n": 197,
+    "p": 19.9
+   },
+   {
+    "band": "40-59",
+    "n": 306,
+    "p": 30.8
+   },
+   {
+    "band": "60-79",
+    "n": 348,
+    "p": 35.1
+   },
+   {
+    "band": ">=80",
+    "n": 141,
+    "p": 14.2
+   }
+  ],
+  "annotator": [
+   {
+    "annotator": 4,
+    "n": 500,
+    "p": 50.0
+   },
+   {
+    "annotator": 5,
+    "n": 500,
+    "p": 50.0
+   }
+  ],
+  "time": [
+   {
+    "date": "2026-06-27",
+    "n": 24
+   },
+   {
+    "date": "2026-06-28",
+    "n": 107
+   },
+   {
+    "date": "2026-06-29",
+    "n": 99
+   },
+   {
+    "date": "2026-07-01",
+    "n": 101
+   },
+   {
+    "date": "2026-07-02",
+    "n": 168
+   },
+   {
+    "date": "2026-07-03",
+    "n": 410
+   },
+   {
+    "date": "2026-07-05",
+    "n": 89
+   },
+   {
+    "date": "2026-07-06",
+    "n": 2
+   }
+  ],
+  "anchor_year": {
+   "min": 2110.0,
+   "max": 2204.0,
+   "note": "MIMIC 对年份做了统一移位(2150 区间附近为示意)，非真实年份，仅用于说明数据来自 MIMIC 时间窗。"
+  },
+  "top_zh_terms": [
+   {
+    "term": "窦性心律",
+    "n": 636,
+    "p": 63.6
+   },
+   {
+    "term": "时期未定",
+    "n": 117,
+    "p": 11.7
+   },
+   {
+    "term": "窦性心动过缓",
+    "n": 87,
+    "p": 8.7
+   },
+   {
+    "term": "窦性心动过速",
+    "n": 84,
+    "p": 8.4
+   },
+   {
+    "term": "为正常变异",
+    "n": 61,
+    "p": 6.1
+   },
+   {
+    "term": "电轴左偏",
+    "n": 61,
+    "p": 6.1
+   },
+   {
+    "term": "心电图正常",
+    "n": 50,
+    "p": 5.0
+   },
+   {
+    "term": "下壁心肌梗死",
+    "n": 40,
+    "p": 4.0
+   },
+   {
+    "term": "QT间期延长",
+    "n": 40,
+    "p": 4.0
+   },
+   {
+    "term": "由心肌缺血所致",
+    "n": 38,
+    "p": 3.8
+   },
+   {
+    "term": "左心室肥厚",
+    "n": 35,
+    "p": 3.5
+   },
+   {
+    "term": "心电轴左偏",
+    "n": 32,
+    "p": 3.2
+   },
+   {
+    "term": "左束支传导阻滞",
+    "n": 32,
+    "p": 3.2
+   },
+   {
+    "term": "侧壁ST-T改变",
+    "n": 32,
+    "p": 3.2
+   },
+   {
+    "term": "下壁",
+    "n": 30,
+    "p": 3.0
+   },
+   {
+    "term": "右束支传导阻滞",
+    "n": 29,
+    "p": 2.9
+   },
+   {
+    "term": "R波递增不良",
+    "n": 29,
+    "p": 2.9
+   },
+   {
+    "term": "心房颤动",
+    "n": 27,
+    "p": 2.7
+   },
+   {
+    "term": "心电图异常",
+    "n": 25,
+    "p": 2.5
+   },
+   {
+    "term": "胸导联低电压",
+    "n": 25,
+    "p": 2.5
+   },
+   {
+    "term": "窦性心律不齐",
+    "n": 24,
+    "p": 2.4
+   },
+   {
+    "term": "除心率增快外",
+    "n": 18,
+    "p": 1.8
+   },
+   {
+    "term": "室内传导阻滞",
+    "n": 17,
+    "p": 1.7
+   },
+   {
+    "term": "前壁心肌梗死",
+    "n": 17,
+    "p": 1.7
+   },
+   {
+    "term": "心房颤动伴快速心室率",
+    "n": 16,
+    "p": 1.6
+   },
+   {
+    "term": "除心率减慢外",
+    "n": 16,
+    "p": 1.6
+   },
+   {
+    "term": "一度房室传导阻滞",
+    "n": 15,
+    "p": 1.5
+   },
+   {
+    "term": "前壁T波非特异性改变",
+    "n": 15,
+    "p": 1.5
+   },
+   {
+    "term": "侧壁非特异性ST-T改变",
+    "n": 15,
+    "p": 1.5
+   },
+   {
+    "term": "侧壁T波改变",
+    "n": 15,
+    "p": 1.5
+   },
+   {
+    "term": "由左心室肥厚所致",
+    "n": 14,
+    "p": 1.4
+   },
+   {
+    "term": "短PR间期",
+    "n": 13,
+    "p": 1.3
+   },
+   {
+    "term": "左心室肥厚伴继发性复极异常",
+    "n": 12,
+    "p": 1.2
+   },
+   {
+    "term": "V1导联rSr'型",
+    "n": 12,
+    "p": 1.2
+   },
+   {
+    "term": "左前分支传导阻滞",
+    "n": 12,
+    "p": 1.2
+   },
+   {
+    "term": "V1导联呈rSr'型",
+    "n": 11,
+    "p": 1.1
+   },
+   {
+    "term": "左心房肥大",
+    "n": 11,
+    "p": 1.1
+   },
+   {
+    "term": "电轴右偏",
+    "n": 11,
+    "p": 1.1
+   },
+   {
+    "term": "左心房异常",
+    "n": 11,
+    "p": 1.1
+   },
+   {
+    "term": "室性早搏",
+    "n": 11,
+    "p": 1.1
+   }
+  ],
+  "top_en_terms": [
+   {
+    "term": "Sinus rhythm",
+    "n": 525,
+    "p": 52.5
+   },
+   {
+    "term": "Abnormal ECG",
+    "n": 316,
+    "p": 31.6
+   },
+   {
+    "term": "Borderline ECG",
+    "n": 243,
+    "p": 24.3
+   },
+   {
+    "term": "Normal ECG",
+    "n": 219,
+    "p": 21.9
+   },
+   {
+    "term": "Sinus bradycardia",
+    "n": 74,
+    "p": 7.4
+   },
+   {
+    "term": "Sinus tachycardia",
+    "n": 70,
+    "p": 7.0
+   },
+   {
+    "term": "Sinus rhythm.",
+    "n": 61,
+    "p": 6.1
+   },
+   {
+    "term": "Left axis deviation",
+    "n": 57,
+    "p": 5.7
+   },
+   {
+    "term": "Normal ECG except for rate",
+    "n": 45,
+    "p": 4.5
+   },
+   {
+    "term": "Inferior T wave changes are nonspecific",
+    "n": 40,
+    "p": 4.0
+   },
+   {
+    "term": "Prolonged QT interval",
+    "n": 40,
+    "p": 4.0
+   },
+   {
+    "term": "Low QRS voltages in precordial leads",
+    "n": 39,
+    "p": 3.9
+   },
+   {
+    "term": "Leftward axis",
+    "n": 33,
+    "p": 3.3
+   },
+   {
+    "term": "Possible anterior infarct - age undetermined",
+    "n": 32,
+    "p": 3.2
+   },
+   {
+    "term": "Poor R wave progression - probable normal variant",
+    "n": 31,
+    "p": 3.1
+   },
+   {
+    "term": "rSr'(V1) - probable normal variant",
+    "n": 30,
+    "p": 3.0
+   },
+   {
+    "term": "Left bundle branch block",
+    "n": 30,
+    "p": 3.0
+   },
+   {
+    "term": "Possible inferior infarct - age undetermined",
+    "n": 29,
+    "p": 2.9
+   },
+   {
+    "term": "Inferior infarct - age undetermined",
+    "n": 27,
+    "p": 2.7
+   },
+   {
+    "term": "Right bundle branch block",
+    "n": 26,
+    "p": 2.6
+   },
+   {
+    "term": "Left ventricular hypertrophy",
+    "n": 26,
+    "p": 2.6
+   },
+   {
+    "term": "Atrial fibrillation",
+    "n": 23,
+    "p": 2.3
+   },
+   {
+    "term": "Probable left atrial enlargement",
+    "n": 22,
+    "p": 2.2
+   },
+   {
+    "term": "Sinus arrhythmia",
+    "n": 21,
+    "p": 2.1
+   },
+   {
+    "term": "Anterior T wave changes are nonspecific",
+    "n": 19,
+    "p": 1.9
+   },
+   {
+    "term": "IV conduction defect",
+    "n": 17,
+    "p": 1.7
+   },
+   {
+    "term": "Short PR interval",
+    "n": 17,
+    "p": 1.7
+   },
+   {
+    "term": "RBBB with left anterior fascicular block",
+    "n": 17,
+    "p": 1.7
+   },
+   {
+    "term": "Lateral T wave changes are nonspecific",
+    "n": 16,
+    "p": 1.6
+   },
+   {
+    "term": "Inferior/lateral ST-T changes are nonspecific",
+    "n": 16,
+    "p": 1.6
+   },
+   {
+    "term": "Sinus rhythm with borderline 1st degree A-V block",
+    "n": 15,
+    "p": 1.5
+   },
+   {
+    "term": "Low QRS voltages in limb leads",
+    "n": 15,
+    "p": 1.5
+   },
+   {
+    "term": "Rightward axis",
+    "n": 14,
+    "p": 1.4
+   },
+   {
+    "term": "Possible left atrial abnormality",
+    "n": 14,
+    "p": 1.4
+   },
+   {
+    "term": "ST junctional depression is nonspecific",
+    "n": 14,
+    "p": 1.4
+   },
+   {
+    "term": "Abnormal R-wave progression",
+    "n": 13,
+    "p": 1.3
+   },
+   {
+    "term": "early transition",
+    "n": 13,
+    "p": 1.3
+   },
+   {
+    "term": "Sinus tachycardia.",
+    "n": 12,
+    "p": 1.2
+   },
+   {
+    "term": "Low voltage",
+    "n": 12,
+    "p": 1.2
+   },
+   {
+    "term": "Pacemaker rhythm - no further analysis",
+    "n": 12,
+    "p": 1.2
+   }
+  ],
+  "term_accuracy": [
+   {
+    "term": "窦性心律",
+    "n": 636,
+    "acc": 163,
+    "ina": 468,
+    "und": 5
+   },
+   {
+    "term": "时期未定",
+    "n": 117,
+    "acc": 11,
+    "ina": 105,
+    "und": 1
+   },
+   {
+    "term": "窦性心动过缓",
+    "n": 87,
+    "acc": 18,
+    "ina": 68,
+    "und": 1
+   },
+   {
+    "term": "窦性心动过速",
+    "n": 84,
+    "acc": 14,
+    "ina": 69,
+    "und": 1
+   },
+   {
+    "term": "为正常变异",
+    "n": 61,
+    "acc": 7,
+    "ina": 54,
+    "und": 0
+   },
+   {
+    "term": "电轴左偏",
+    "n": 61,
+    "acc": 5,
+    "ina": 54,
+    "und": 2
+   },
+   {
+    "term": "心电图正常",
+    "n": 50,
+    "acc": 19,
+    "ina": 31,
+    "und": 0
+   },
+   {
+    "term": "下壁心肌梗死",
+    "n": 40,
+    "acc": 5,
+    "ina": 35,
+    "und": 0
+   },
+   {
+    "term": "QT间期延长",
+    "n": 40,
+    "acc": 3,
+    "ina": 37,
+    "und": 0
+   },
+   {
+    "term": "由心肌缺血所致",
+    "n": 38,
+    "acc": 2,
+    "ina": 36,
+    "und": 0
+   },
+   {
+    "term": "左心室肥厚",
+    "n": 35,
+    "acc": 4,
+    "ina": 29,
+    "und": 2
+   },
+   {
+    "term": "心电轴左偏",
+    "n": 32,
+    "acc": 7,
+    "ina": 24,
+    "und": 1
+   },
+   {
+    "term": "左束支传导阻滞",
+    "n": 32,
+    "acc": 3,
+    "ina": 29,
+    "und": 0
+   },
+   {
+    "term": "侧壁ST-T改变",
+    "n": 32,
+    "acc": 3,
+    "ina": 28,
+    "und": 1
+   },
+   {
+    "term": "下壁",
+    "n": 30,
+    "acc": 3,
+    "ina": 27,
+    "und": 0
+   },
+   {
+    "term": "右束支传导阻滞",
+    "n": 29,
+    "acc": 0,
+    "ina": 28,
+    "und": 1
+   },
+   {
+    "term": "R波递增不良",
+    "n": 29,
+    "acc": 5,
+    "ina": 24,
+    "und": 0
+   },
+   {
+    "term": "心房颤动",
+    "n": 27,
+    "acc": 6,
+    "ina": 20,
+    "und": 1
+   },
+   {
+    "term": "心电图异常",
+    "n": 25,
+    "acc": 5,
+    "ina": 20,
+    "und": 0
+   },
+   {
+    "term": "胸导联低电压",
+    "n": 25,
+    "acc": 7,
+    "ina": 18,
+    "und": 0
+   }
+  ],
+  "inaccuracy_nature": {
+   "n": 760,
+   "orig_median_terms": 3.0,
+   "corr_median_terms": 3.0,
+   "corr_gt_orig": 292,
+   "corr_eq_orig": 186,
+   "corr_lt_orig": 282,
+   "pct_added_findings": 38.4,
+   "note": "专家纠正标签的中位术语数(3.0)高于原始 MIMIC 标签(3.0)，且 38.4% 的不准确案例纠正后术语更多——说明 MIMIC 高不准确率主要源于【遗漏型错误】(原始标签漏报 PtfV1、T波/ST-T 改变等次要发现)，而非【误判型错误】。这与 MIMIC 自由文本命名空间复杂、标注粒度不一致直接相关。"
+  },
+  "label_redundancy": {
+   "distinct_reports": 581,
+   "top1_share_p": 18.1,
+   "top5_share_p": 27.2,
+   "note": "诊断文本高度集中：仅 5 种英文报告即覆盖约 27% 样本，说明简单随机抽样下少数高频诊断主导标签空间，稀有诊断代表性不足。"
+  }
+ },
+ "compare": {
+  "overview": [
+   {
+    "库": "MIMIC (本分析)",
+    "行数": 1000,
+    "主键": "annotation_id",
+    "抽样方法": "简单随机抽样(自 MIMIC 原始库)",
+    "人群": "ICU 住院患者(MIMIC-IV)",
+    "诊断命名": "英文自由文本 + 专家中文翻译(report_cn)"
+   },
+   {
+    "库": "宁波(去重主集)",
+    "行数": 623,
+    "主键": "record_id",
+    "抽样方法": "医院连续收录 + 分层抽样字段",
+    "人群": "单中心门诊/住院心电图",
+    "诊断命名": "中文结构化(combo_pattern/diagnose_chinese_names)"
+   },
+   {
+    "库": "PTB-XL",
+    "行数": 674,
+    "主键": "number",
+    "抽样方法": "公开库按年龄/性别/报告比例分层",
+    "人群": "多中心门诊心电图",
+    "诊断命名": "SCP 编码(SCP_en_cn)"
+   }
+  ],
+  "label_cmp": {
+   "rows": [
+    {
+     "库": "MIMIC",
+     "准确": 230,
+     "不准确": 760,
+     "未判定": 10,
+     "合计": 1000,
+     "不准确率%(主集)": 76.8,
+     "主分析集": 990
+    },
+    {
+     "库": "宁波",
+     "准确": 274,
+     "不准确": 339,
+     "未判定": 10,
+     "合计": 623,
+     "不准确率%(主集)": 55.3,
+     "主分析集": 613
+    },
+    {
+     "库": "PTB-XL",
+     "准确": 286,
+     "不准确": 387,
+     "未判定": 1,
+     "合计": 674,
+     "不准确率%(主集)": 57.5,
+     "主分析集": 673
+    }
+   ],
+   "note": "宁波/PTB-XL 主分析集剔除了「未判定」；MIMIC 未判定 10 例一并保留展示。三库不准确率均处于 50%-56% 区间，量级一致但 MIMIC 未判定最少(抽样更聚焦)。"
+  },
+  "demo_cmp": {
+   "rows": [
+    {
+     "库": "MIMIC",
+     "均龄": 57.5,
+     "中位龄": 59.0,
+     "男": 489,
+     "女": 503,
+     "男%": 49.3
+    },
+    {
+     "库": "宁波",
+     "均龄": 60.3,
+     "中位龄": 64.0,
+     "男": 351,
+     "女": 271,
+     "男%": 56.4
+    },
+    {
+     "库": "PTB-XL",
+     "均龄": 61.3,
+     "中位龄": 62.0,
+     "男": 336,
+     "女": 338,
+     "男%": 49.9
+    }
+   ],
+   "note": "MIMIC 为 ICU 队列，均龄(57.5) 显著高于门诊库(宁波/PTB-XL 约 50-60)，男性占比更高；提示 MIMIC 样本在年龄/ acuity 上与另两库存在系统性偏移。"
+  },
+  "sampling_note": "MIMIC 采用简单随机抽样(simple random sampling)自 MIMIC-IV 原始库。其代表性需从两层理解：\n① 对 MIMIC-IV 总体(ICU 住院人群)：若抽样框完整且随机，则对本队列内部推断有效；\n② 对「真实世界 ECG 标签准确性」外部推断：代表性有限——MIMIC 仅覆盖 ICU 住院患者，其诊断组合(更多急性/危重心律、更多起搏/缺血)与门诊 ECG 库(宁波/PTB-XL)存在选择偏倚；且 MIMIC 原始诊断命名空间极复杂(自由文本 + ICD/MEOW 等)，简单随机抽样未能按诊断类分层抽样，故稀有诊断(如 Brugada、预激、尖端扭转型室速)在 1000 例样本中被低估，其标签错误率估计的置信区间将偏宽。建议：若需推断门诊 ECG 总体，应改用分层抽样；若仅描述 ICU ECG 标签质量，当前抽样可接受，但需显式声明人群边界。",
+  "vocab": [
+   {
+    "concept_en": "Sinus rhythm",
+    "concept_zh": "窦性心律",
+    "ningbo": 449,
+    "ptbxl": 254,
+    "mimic_en": 661,
+    "mimic_zh": 696,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Sinus bradycardia",
+    "concept_zh": "窦性心动过缓",
+    "ningbo": 217,
+    "ptbxl": 0,
+    "mimic_en": 111,
+    "mimic_zh": 112,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Sinus tachycardia",
+    "concept_zh": "窦性心动过速",
+    "ningbo": 102,
+    "ptbxl": 0,
+    "mimic_en": 96,
+    "mimic_zh": 96,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "ST depression / T abnormality",
+    "concept_zh": "ST压低/T波异常",
+    "ningbo": 157,
+    "ptbxl": 105,
+    "mimic_en": 0,
+    "mimic_zh": 6,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Atrial fibrillation",
+    "concept_zh": "心房颤动",
+    "ningbo": 33,
+    "ptbxl": 1,
+    "mimic_en": 61,
+    "mimic_zh": 61,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Atrioventricular block (1st)",
+    "concept_zh": "一度房室传导阻滞",
+    "ningbo": 23,
+    "ptbxl": 36,
+    "mimic_en": 43,
+    "mimic_zh": 46,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Right bundle branch block",
+    "concept_zh": "右束支传导阻滞",
+    "ningbo": 10,
+    "ptbxl": 44,
+    "mimic_en": 28,
+    "mimic_zh": 54,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Myocardial ischemia",
+    "concept_zh": "缺血性ST-T改变",
+    "ningbo": 0,
+    "ptbxl": 49,
+    "mimic_en": 85,
+    "mimic_zh": 0,
+    "expert_supplemented": ""
+   },
+   {
+    "concept_en": "Atrial flutter",
+    "concept_zh": "心房扑动",
+    "ningbo": 117,
+    "ptbxl": 2,
+    "mimic_en": 5,
+    "mimic_zh": 5,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Sinus arrhythmia",
+    "concept_zh": "窦性心律不齐",
+    "ningbo": 41,
+    "ptbxl": 0,
+    "mimic_en": 34,
+    "mimic_zh": 34,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Myocardial infarction (anterior)",
+    "concept_zh": "前/前间壁心肌梗死",
+    "ningbo": 0,
+    "ptbxl": 57,
+    "mimic_en": 1,
+    "mimic_zh": 43,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Myocardial infarction (inferior)",
+    "concept_zh": "下壁心肌梗死",
+    "ningbo": 0,
+    "ptbxl": 34,
+    "mimic_en": 2,
+    "mimic_zh": 54,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Left anterior fascicular block",
+    "concept_zh": "左前分支阻滞",
+    "ningbo": 0,
+    "ptbxl": 28,
+    "mimic_en": 38,
+    "mimic_zh": 19,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Atrial enlargement",
+    "concept_zh": "心房异常/肥大",
+    "ningbo": 3,
+    "ptbxl": 8,
+    "mimic_en": 48,
+    "mimic_zh": 22,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Left bundle branch block",
+    "concept_zh": "左束支传导阻滞",
+    "ningbo": 0,
+    "ptbxl": 12,
+    "mimic_en": 31,
+    "mimic_zh": 32,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "ST elevation",
+    "concept_zh": "ST段抬高",
+    "ningbo": 3,
+    "ptbxl": 0,
+    "mimic_en": 29,
+    "mimic_zh": 35,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "QRS axis deviation",
+    "concept_zh": "心电轴偏移",
+    "ningbo": 0,
+    "ptbxl": 0,
+    "mimic_en": 64,
+    "mimic_zh": 0,
+    "expert_supplemented": ""
+   },
+   {
+    "concept_en": "Left ventricular hypertrophy",
+    "concept_zh": "左室肥厚/高电压",
+    "ningbo": 0,
+    "ptbxl": 17,
+    "mimic_en": 40,
+    "mimic_zh": 5,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Premature ventricular complexes",
+    "concept_zh": "室性期前收缩",
+    "ningbo": 0,
+    "ptbxl": 9,
+    "mimic_en": 48,
+    "mimic_zh": 4,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "QT prolongation",
+    "concept_zh": "QT间期延长",
+    "ningbo": 15,
+    "ptbxl": 4,
+    "mimic_en": 1,
+    "mimic_zh": 40,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "QRS low voltage",
+    "concept_zh": "QRS低电压",
+    "ningbo": 23,
+    "ptbxl": 0,
+    "mimic_en": 12,
+    "mimic_zh": 14,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Intraventricular conduction delay",
+    "concept_zh": "室内传导阻滞",
+    "ningbo": 0,
+    "ptbxl": 17,
+    "mimic_en": 4,
+    "mimic_zh": 17,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Pacemaker / paced rhythm",
+    "concept_zh": "起搏器/起搏心律",
+    "ningbo": 0,
+    "ptbxl": 7,
+    "mimic_en": 13,
+    "mimic_zh": 14,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Myocardial injury",
+    "concept_zh": "心肌损伤",
+    "ningbo": 0,
+    "ptbxl": 10,
+    "mimic_en": 11,
+    "mimic_zh": 11,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Early repolarization",
+    "concept_zh": "早期复极",
+    "ningbo": 7,
+    "ptbxl": 0,
+    "mimic_en": 3,
+    "mimic_zh": 9,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Ectopic atrial rhythm",
+    "concept_zh": "异位房性心律",
+    "ningbo": 0,
+    "ptbxl": 0,
+    "mimic_en": 10,
+    "mimic_zh": 6,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Supraventricular tachycardia",
+    "concept_zh": "室上性心动过速",
+    "ningbo": 14,
+    "ptbxl": 1,
+    "mimic_en": 0,
+    "mimic_zh": 0,
+    "expert_supplemented": ""
+   },
+   {
+    "concept_en": "Pericarditis",
+    "concept_zh": "心包炎",
+    "ningbo": 0,
+    "ptbxl": 0,
+    "mimic_en": 7,
+    "mimic_zh": 7,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Digoxin effect",
+    "concept_zh": "洋地黄效应",
+    "ningbo": 0,
+    "ptbxl": 9,
+    "mimic_en": 0,
+    "mimic_zh": 0,
+    "expert_supplemented": ""
+   },
+   {
+    "concept_en": "Bigeminy",
+    "concept_zh": "二联律",
+    "ningbo": 0,
+    "ptbxl": 1,
+    "mimic_en": 1,
+    "mimic_zh": 4,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Premature atrial complexes",
+    "concept_zh": "房性期前收缩",
+    "ningbo": 0,
+    "ptbxl": 0,
+    "mimic_en": 0,
+    "mimic_zh": 5,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Atrioventricular block (2nd/3rd)",
+    "concept_zh": "二/三度房室传导阻滞",
+    "ningbo": 5,
+    "ptbxl": 0,
+    "mimic_en": 0,
+    "mimic_zh": 0,
+    "expert_supplemented": ""
+   },
+   {
+    "concept_en": "U wave abnormality",
+    "concept_zh": "U波异常",
+    "ningbo": 5,
+    "ptbxl": 0,
+    "mimic_en": 0,
+    "mimic_zh": 0,
+    "expert_supplemented": ""
+   },
+   {
+    "concept_en": "Right ventricular hypertrophy",
+    "concept_zh": "右室肥厚",
+    "ningbo": 0,
+    "ptbxl": 1,
+    "mimic_en": 2,
+    "mimic_zh": 1,
+    "expert_supplemented": "是(中文report_cn+correctLabel)"
+   },
+   {
+    "concept_en": "Wolff-Parkinson-White / preexcitation",
+    "concept_zh": "预激综合征",
+    "ningbo": 1,
+    "ptbxl": 2,
+    "mimic_en": 1,
+    "mimic_zh": 0,
+    "expert_supplemented": ""
+   },
+   {
+    "concept_en": "Left posterior fascicular block",
+    "concept_zh": "左后分支阻滞",
+    "ningbo": 0,
+    "ptbxl": 3,
+    "mimic_en": 0,
+    "mimic_zh": 0,
+    "expert_supplemented": ""
+   },
+   {
+    "concept_en": "Electrolyte disturbance",
+    "concept_zh": "电解质紊乱",
+    "ningbo": 0,
+    "ptbxl": 1,
+    "mimic_en": 0,
+    "mimic_zh": 0,
+    "expert_supplemented": ""
+   }
+  ],
+  "vocab_note": "本表为三库诊断标签对照词表，覆盖 40 个核心 ECG 诊断概念。「专家补充词汇」列标注该概念在 MIMIC 中的中文表述(report_cn)与纠正标签(correctLabel)系专家审阅时补充——MIMIC 原始库仅含英文自由文本诊断，中文术语与错误纠正标签均由本项目专家团队增补，构成跨库可比的中文诊断层。计数采用各库诊断文本的关键词命中（同一病例计 1 次），用于反映概念相对频次而非精确患病率。"
+ },
+ "meta": {
+  "mimic_file": "MIMIC 合并-7.17.xlsx",
+  "ningbo_file": "去重后_宁波合并_完整7.29.xlsx (623行/主集613)",
+  "ptbxl_file": "PTB-XL合并-7.28.xlsx (674行)",
+  "generated": "2026-07-30"
+ }
+};
+const C = {pri:'#ffb454',pri2:'#ffd09a',acc:'#ff7ab6',good:'#5fe3a1',warn:'#ffd166',bad:'#ff5757',sky:'#4cc7ff',grape:'#c8a8ff',dim:'#c2b89c',ink:'#f5efdc',dim2:'#9c9580'};
+function fmtP(x){return (x).toFixed(1)+'%';}
+function el(id){return document.getElementById(id);}
+function bgInit(){
+  const cv=el('bg'),c=cv.getContext('2d');cv.width=innerWidth;cv.height=innerHeight;
+  c.fillStyle='rgba(255,180,84,0.05)';for(let i=0;i<60;i++){c.beginPath();c.arc(Math.random()*cv.width,Math.random()*cv.height,Math.random()*1.6,0,7);c.fill();}
+}
+function canvas(id,h){const cv=el(id);const dpr=Math.min(2,window.devicePixelRatio||1);
+  const cssW=cv.clientWidth||860,cssH=h;cv.style.height=cssH+'px';
+  cv.width=Math.round(cssW*dpr);cv.height=Math.round(cssH*dpr);
+  const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,cssW,cssH);
+  return {c,w:cssW,h:cssH};}
+function txt(c,x,y,t,col,size,align){c.fillStyle=col||C.ink;c.font=(size||12)+'px '+getComputedStyle(document.body).fontFamily;
+  c.textAlign=align||'left';c.textBaseline='middle';c.fillText(t,x,y);}
+function barsH(id,items,h,opt){opt=opt||{};const {c,w}=canvas(id,h);
+  const padL=opt.padL||150,padR=58,barH=Math.min(24,(h-16)/items.length);
+  const top=8,gap=(h-16-items.length*barH)/Math.max(1,items.length-1),maxv=opt.maxV||1,pw=w-padL-padR;
+  c.strokeStyle='rgba(255,255,255,0.10)';c.lineWidth=1;c.beginPath();c.moveTo(padL+0.5,top-3);c.lineTo(padL+0.5,top+items.length*(barH+gap)-gap+3);c.stroke();
+  items.forEach((it,i)=>{const y=top+i*(barH+gap)+barH/2;txt(c,padL-8,y,it.label,C.ink,12,'right');
+    let bw=pw*Math.min(1,Math.max(0,it.val/maxv));const isZero=!(it.val>0);if(!isZero&&bw<4)bw=4;
+    c.fillStyle=it.col||C.pri;c.fillRect(padL,top+i*(barH+gap),bw,barH);
+    const sub=it.sub!=null?it.sub:(isZero?'0 · 无命中':'×'+it.val);
+    txt(c,padL+bw+8,y,sub,isZero?C.dim:C.ink,11,'left');});}
+function donut(id,segs){const {c,w,h}=canvas(id,300);const cx=w/2,cy=h/2,r=Math.min(w,h)/2-20;
+  const tot=segs.reduce((s,x)=>s+x.v,0);let a=-Math.PI/2;
+  segs.forEach(s=>{const ang=s.v/tot*Math.PI*2;c.beginPath();c.moveTo(cx,cy);c.arc(cx,cy,r,a,a+ang);c.closePath();
+    c.fillStyle=s.col;c.fill();a+=ang;
+    const mx=cx+Math.cos(a-ang/2)*(r+12),my=cy+Math.sin(a-ang/2)*(r+12);
+    txt(c,mx,my,s.label+' '+(s.v/tot*100).toFixed(1)+'%',s.col,12,a-ang/2>Math.PI/2?'right':'left');});
+  c.beginPath();c.arc(cx,cy,r*0.55,0,7);c.fillStyle='rgba(28,31,42,0.9)';c.fill();
+  txt(c,cx,cy-8,'n='+tot,C.ink,15,'center');txt(c,cx,cy+12,'1000 例',C.dim,11,'center');}
+// tooltip
+function tip(html,x,y){const t=el('tooltip');t.innerHTML=html;t.style.left=(x+14)+'px';t.style.top=(y+14)+'px';t.style.opacity=1;}
+function hideTip(){el('tooltip').style.opacity=0;}
+
+function renderM1(){
+  const s=M.stats,dd=M.dedup;
+  el('hdr-badge').textContent='数据底座：MIMIC 合并-7.17 · '+s.n+' 例 · 简单随机抽样';
+  el('m1-n').textContent=s.n;
+  const acc=s.label,cl=s.correctlabel_fill;
+  el('m1-tiles').innerHTML=[
+    ['pri',s.n,'总例数'],['good',acc.acc,'准确 ('+acc.acc_p+'%)'],
+    ['bad',acc.ina,'不准确 ('+acc.ina_p+'%)'],['warn',acc.und,'未判定 ('+acc.und_p+'%)'],
+    ['sky',cl.fill_p+'%','不准确内纠正填写率'],['grape',M.compare.demo_cmp.rows[0].男+'/'+M.compare.demo_cmp.rows[0].女,'男/女']
+  ].map(t=>`<div class="tile ${t[0]}"><div class="v">${t[1]}</div><div class="l">${t[2]}</div></div>`).join('');
+  el('m1-dedup').textContent=dd.conclusion;
+  el('m1-sampling').textContent='MIMIC 为 ICU 住院队列（均龄 '+s.demo.age_mean+' 岁，高于门诊库）。简单随机抽样对 MIMIC-IV 总体内部推断有效，但对「真实世界 ECG 标签准确性」外部推断代表性有限——ICU 诊断组合（更多急性/危重心律、起搏/缺血）与门诊 ECG 库存在选择偏倚；且未分层，稀有诊断（Brugada/预激/尖端扭转）在 1000 例中代表性不足。';
+  el('m1-note').innerHTML='<b>结论：</b>'+dd.recommendation;
+}
+function renderM2(){
+  const f=M.dedup.findings;
+  let h='<thead><tr><th>检查项</th><th>规则</th><th>置信度</th><th class="num">簇数</th><th class="num">冗余行</th><th>说明</th></tr></thead><tbody>';
+  f.forEach(r=>{h+=`<tr><td>${r.key}</td><td>${r.rule}</td><td>${r.conf}</td><td class="num">${r.clusters}</td><td class="num">${r.extra_rows}</td><td>${r.note}</td></tr>`;});
+  el('m2-tbl').innerHTML=h+'</tbody>';
+  el('m2-rec').innerHTML='<b>处理建议：</b>'+M.dedup.recommendation;
+  const rp=M.dedup.detail_tables.report_top_repeats||[];
+  const mx=Math.max(...rp.map(r=>r.n));
+  barsH('m2-bars',rp.map(r=>({label:r.report.length>26?r.report.slice(0,26)+'…':r.report,val:r.n,sub:'×'+r.n,col:C.sky,maxv:mx})),Math.max(220,rp.length*24),{maxV:mx,padL:200});
+}
+function renderM3(){
+  const acc=M.stats.label;
+  donut('m3-donut',[{label:'准确',v:acc.acc,col:C.good},{label:'不准确',v:acc.ina,col:C.bad},{label:'未判定',v:acc.und,col:C.dim2}]);
+  const nat=M.stats.inaccuracy_nature;
+  el('m3-tiles').innerHTML=[
+    ['good',nat.corr_gt_orig,'纠正后术语更多(遗漏型)'],['warn',nat.corr_eq_orig,'术语数持平'],
+    ['bad',nat.corr_lt_orig,'纠正后术语更少(误判型)'],['pri',nat.pct_added_findings+'%','整体遗漏占比']
+  ].map(t=>`<div class="tile ${t[0]}"><div class="v">${t[1]}</div><div class="l">${t[2]}</div></div>`).join('');
+  el('m3-nature').textContent=nat.note;
+  const ta=M.stats.term_accuracy.slice(0,12).map(r=>({label:r.term,val:r.ina,sub:'准'+r.acc+'/不'+r.ina,col:C.acc,maxv:Math.max(...M.stats.term_accuracy.map(x=>x.ina))}));
+  barsH('m3-term',ta,Math.max(260,ta.length*26),{maxV:ta[0]?ta[0].maxv:1,padL:170});
+}
+function renderM4(){
+  const zh=M.stats.top_zh_terms.slice(0,15),en=M.stats.top_en_terms.slice(0,15);
+  const mxz=zh[0].n,mxe=en[0].n;
+  barsH('m4-zh',zh.map(r=>({label:r.term.length>16?r.term.slice(0,16)+'…':r.term,val:r.n,sub:'×'+r.n,col:C.pri,maxv:mxz})),Math.max(320,zh.length*22),{maxV:mxz,padL:140});
+  barsH('m4-en',en.map(r=>({label:r.term.length>22?r.term.slice(0,22)+'…':r.term,val:r.n,sub:'×'+r.n,col:C.sky,maxv:mxe})),Math.max(320,en.length*22),{maxV:mxe,padL:200});
+  const ab=M.stats.age_bands;
+  barsH('m4-age',ab.map(r=>({label:r.band,val:r.n,sub:r.p+'%',col:C.good,maxv:Math.max(...ab.map(x=>x.n))})),Math.max(200,ab.length*30),{maxV:ab[0]?Math.max(...ab.map(x=>x.n)):1,padL:80});
+  const an=M.stats.annotator;
+  barsH('m4-ann',an.map(r=>({label:'标注者 '+r.annotator,val:r.n,sub:r.p+'%',col:C.grape,maxv:Math.max(...an.map(x=>x.n))})),Math.max(160,an.length*40),{maxV:an[0]?Math.max(...an.map(x=>x.n)):1,padL:90});
+}
+function renderM5(){
+  const lc=M.compare.label_cmp.rows;
+  const vals=lc.map(r=>r['不准确率%(主集)']);
+  barsH('m5-acc',lc.map((r,i)=>({label:r['库'],val:r['不准确率%(主集)'],sub:r['不准确率%(主集)']+'%',col:[C.sky,C.acc,C.pri][i],maxv:100})),260,{maxV:100,padL:90});
+  const dm=M.compare.demo_cmp.rows;
+  let h='<table class="tbl"><thead><tr><th>库</th><th class="num">均龄</th><th class="num">中位龄</th><th class="num">男</th><th class="num">女</th><th class="num">男%</th></tr></thead><tbody>';
+  dm.forEach(r=>{h+=`<tr><td>${r['库']}</td><td class="num">${r['均龄']}</td><td class="num">${r['中位龄']}</td><td class="num">${r['男']}</td><td class="num">${r['女']}</td><td class="num">${r['男%']}</td></tr>`;});
+  el('m5-demo').innerHTML=h+'</tbody>';
+  const ov=M.compare.overview;
+  let o='<thead><tr><th>库</th><th class="num">行数</th><th>主键</th><th>抽样方法</th><th>人群</th><th>诊断命名</th></tr></thead><tbody>';
+  ov.forEach(r=>{o+=`<tr><td>${r['库']}</td><td class="num">${r['行数']}</td><td>${r['主键']}</td><td>${r['抽样方法']}</td><td>${r['人群']}</td><td>${r['诊断命名']}</td></tr>`;});
+  el('m5-ov').innerHTML=o+'</tbody>';
+  el('m5-samp').textContent=M.compare.sampling_note;
+}
+function renderM6(){
+  const v=M.compare.vocab;
+  const inp=el('m6-search').value.trim().toLowerCase();
+  const rows=v.filter(r=>(r.concept_en+' '+r.concept_zh+' '+r.expert_supplemented).toLowerCase().includes(inp));
+  let h='<thead><tr><th>诊断概念(中)</th><th>诊断概念(英)</th><th class="num">宁波</th><th class="num">PTB-XL</th><th class="num">MIMIC(英)</th><th class="num">MIMIC(中)</th><th>专家补充词汇</th></tr></thead><tbody>';
+  rows.forEach(r=>{h+=`<tr><td>${r.concept_zh}</td><td style="color:var(--dim)">${r.concept_en}</td>`+
+    `<td class="num">${r.ningbo}</td><td class="num">${r.ptbxl}</td><td class="num">${r.mimic_en}</td><td class="num">${r.mimic_zh}</td>`+
+    `<td>${r.expert_supplemented?'<span class="tag-exp">'+r.expert_supplemented+'</span>':''}</td></tr>`;});
+  el('m6-tbl').innerHTML=h+'</tbody>';
+  el('m6-note').innerHTML='<b>词表说明：</b>'+M.compare.vocab_note;
+}
+
+const RENDER={m1:renderM1,m2:renderM2,m3:renderM3,m4:renderM4,m5:renderM5,m6:renderM6};
+function showTab(t){document.querySelectorAll('section.mod').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  el(t).classList.add('active');document.querySelector('nav.tabs button[data-tab="'+t+'"]').classList.add('active');
+  if(RENDER[t])RENDER[t]();}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+el('m6-search').addEventListener('input',renderM6);
+window.addEventListener('resize',()=>{const a=document.querySelector('section.mod.active');if(a)RENDER[a.id]&&RENDER[a.id]();});
+bgInit();showTab('m1');
+</script>
+</body>
+</html>

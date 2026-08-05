@@ -1,0 +1,3873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>心电图标签噪声模拟器 · v15</title>
+<style>
+:root{
+  --bg:#1c1f2a; --bg2:#252836;
+  --panel:rgba(40,46,62,0.72); --panel2:rgba(56,62,80,0.78);
+  --ink:#f5efdc; --dim:#c2b89c; --dim2:#9c9580;
+  --line:rgba(255,180,84,0.22);
+  --pri:#ffb454; --pri2:#ffd09a;     /* 暖琥珀 — 主色 */
+  --acc:#ff7ab6; --acc2:#ffb3d6;     /* 玫瑰粉 — 副色（账面） */
+  --good:#5fe3a1; --good2:#a8f0c8;   /* 薄荷绿 — 干净/真值（真金标准） */
+  --warn:#ffd166;                     /* 向日葵黄 — 警告 */
+  --bad:#ff5757;  --bad2:#ffb0b0;    /* 鲜红 — 危险/衰减（更鲜明） */
+  --sky:#4cc7ff; --sky2:#a0e1ff;     /* 鲜亮青蓝 — 信息/原始（Boostrap） */
+  --grape:#c8a8ff;                    /* 薰衣草 — 三色 */
+  --gold:#f5b942;                     /* 高亮金 — 中间派生变量 */
+  --font:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font);}
+body{overflow-x:hidden;background:radial-gradient(ellipse at 20% 0%,#2b2438 0%,var(--bg) 55%),radial-gradient(ellipse at 100% 100%,#2a2f3d 0%,var(--bg) 60%);}
+#bg{position:fixed;inset:0;z-index:0;opacity:0.45;}
+.wrap{position:relative;z-index:1;max-width:1220px;margin:0 auto;padding:0 18px 80px;}
+header.top{position:relative;z-index:1;padding:32px 18px 6px;max-width:1220px;margin:0 auto;}
+header.top h1{font-size:30px;margin:0;letter-spacing:1px;
+  background:linear-gradient(90deg,var(--pri),var(--acc),var(--good));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 22px rgba(255,180,84,0.18);}
+header.top p.sub{color:var(--dim);margin:8px 0 0;font-size:13.5px;line-height:1.7;}
+header.top .badge{display:inline-block;margin-top:10px;padding:4px 12px;border:1px solid var(--line);
+  border-radius:20px;font-size:12px;color:var(--pri);background:rgba(255,180,84,0.07);}
+nav.tabs{position:sticky;top:0;z-index:5;display:flex;gap:8px;flex-wrap:wrap;
+  padding:12px 18px;margin:14px auto 0;max-width:1220px;
+  background:rgba(28,31,42,0.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+nav.tabs button{flex:1;min-width:160px;cursor:pointer;border:1px solid var(--line);
+  background:var(--panel);color:var(--dim);padding:11px 10px;border-radius:12px;
+  font-size:13.5px;font-family:var(--font);transition:.18s;letter-spacing:.5px;}
+nav.tabs button .n{font-family:var(--mono);color:var(--pri);margin-right:6px;font-size:12px;}
+nav.tabs button:hover{color:var(--ink);border-color:rgba(255,180,84,0.45);}
+nav.tabs button.active{color:#2a1a05;background:linear-gradient(120deg,var(--pri),var(--pri2));
+  border-color:transparent;box-shadow:0 0 22px rgba(255,180,84,0.35);font-weight:700;}
+section.mod{display:none;margin-top:22px;animation:fade .4s ease;}
+section.mod.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.lead{color:var(--dim);font-size:13.5px;line-height:1.75;margin:0 0 16px;
+  border-left:3px solid var(--acc);padding:6px 0 6px 14px;background:rgba(255,122,182,0.05);border-radius:0 8px 8px 0;}
+.lead b{color:var(--pri2)}
+.grid{display:grid;gap:16px;}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:18px 18px 16px;backdrop-filter:blur(6px);box-shadow:0 8px 28px rgba(0,0,0,0.32);}
+.panel h3{margin:0 0 4px;font-size:15.5px;letter-spacing:.5px;}
+.panel h3 .tag{font-family:var(--mono);font-size:11px;color:var(--pri);
+  border:1px solid var(--line);padding:1px 7px;border-radius:8px;margin-left:8px;vertical-align:middle;}
+.panel .desc{color:var(--dim);font-size:12.5px;margin:0 0 14px;line-height:1.65;}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;}
+.tile{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:13px 14px;text-align:center;}
+.tile .v{font-family:var(--mono);font-size:25px;font-weight:700;line-height:1.1;}
+.tile .l{font-size:11.5px;color:var(--dim);margin-top:5px;}
+.tile.pri .v{color:var(--pri)} .tile.acc .v{color:var(--acc)} .tile.good .v{color:var(--good)}
+.tile.warn .v{color:var(--warn)} .tile.bad .v{color:var(--bad)} .tile.sky .v{color:var(--sky)} .tile.grape .v{color:var(--grape)}
+svg{display:block;width:100%;height:auto;}
+#tooltip{position:fixed;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s;
+  background:rgba(20,18,12,0.96);border:1px solid var(--pri);border-radius:9px;
+  padding:9px 12px;font-size:12.5px;line-height:1.55;max-width:300px;
+  box-shadow:0 0 22px rgba(255,180,84,0.28);color:var(--ink);}
+#tooltip b{color:var(--pri)}
+.ctl{margin:10px 0;}
+.ctl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:5px;}
+.ctl label .val{font-family:var(--mono);color:var(--pri);font-weight:700;}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:6px;
+  background:linear-gradient(90deg,var(--pri),var(--acc));outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:#fff;border:3px solid var(--pri);cursor:pointer;box-shadow:0 0 12px var(--pri);}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;
+  border:3px solid var(--pri);cursor:pointer;}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.btn{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);
+  padding:9px 15px;border-radius:11px;font-size:13px;font-family:var(--font);transition:.15s;}
+.btn:hover{border-color:var(--pri);box-shadow:0 0 14px rgba(255,180,84,0.3);}
+.btn.primary{background:linear-gradient(120deg,var(--acc),var(--acc2));color:#2a0a18;border:none;font-weight:700;}
+.btn.amber{background:linear-gradient(120deg,var(--pri),var(--pri2));color:#2a1a05;border:none;font-weight:700;}
+.btn.toggle.on{background:linear-gradient(120deg,var(--good),var(--good2));color:#04210f;border:none;font-weight:700;}
+select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;
+  padding:7px 10px;font-size:13px;font-family:var(--font);}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--dim);margin-top:8px;}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+.kpi{font-family:var(--mono);}
+.kpi.big{font-size:21px;font-weight:700;}
+.note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:10px;
+  border-top:1px dashed var(--line);padding-top:10px;}
+.note b{color:var(--warn);}
+.scan{font-family:var(--mono);font-size:12.5px;color:var(--good);}
+footer{position:relative;z-index:1;text-align:center;color:var(--dim);font-size:12px;margin-top:40px;line-height:1.7;}
+canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,0.55);}
+.quiz{padding:10px 0 0;}
+.quiz .qcard{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:8px;}
+.quiz .qcard .q{font-size:14px;margin-bottom:10px;}
+.quiz .qcard .q b{color:var(--bad);font-size:16px;}
+.quiz .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.quiz .opt{cursor:pointer;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--panel);font-size:13px;transition:.15s;}
+.quiz .opt:hover{border-color:var(--pri);}
+.quiz .opt.correct{background:linear-gradient(120deg,var(--good),var(--good2));color:#04210f;border-color:transparent;font-weight:700;}
+.quiz .opt.wrong{background:linear-gradient(120deg,var(--bad),var(--bad2));color:#2a0505;border-color:transparent;font-weight:700;}
+.quiz .opt:disabled{cursor:default;}
+.quiz .meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12.5px;color:var(--dim);}
+.quiz .meta .score b{color:var(--pri);}
+.quiz .reveal{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.6;}
+@media(max-width:760px){header.top h1{font-size:23px}.tiles{grid-template-columns:repeat(2,1fr)}.quiz .opts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<header class="top">
+  <h1>心电图 AI 标签噪声模拟器</h1>
+  <p class="sub">你是指挥官。左侧看清<b style="color:var(--bad)">宁波数据库的真实标签质量</b>，右侧由你设定<b style="color:var(--pri)">模型学习能力</b>，
+  实时观察噪声标签如何<i>侵蚀</i>模型在<b style="color:var(--good)">真金标准（专家最终判定）</b>下的真实表现，并找出数据库标签错误率必须压到多低才不拖累训练。
+  <br/><span style="color:var(--dim2);font-size:12px;">术语约定：<b>假金标准</b> = 数据库原始标签（训练时喂给模型的"原料"）；<b>真金标准</b> = 专家最终判定（评估模型真实能力的标尺）；<b>账面</b> = 按假金标准算出来的指标。</span></p>
+  <span class="badge">数据底座：宁波数据库去重后 623 条 / 613 主分析集 · 39 诊断单元 · v15.0</span>
+</header>
+
+<nav class="tabs">
+  <button data-tab="m1" class="active"><span class="n">01</span>数据库标签质量</button>
+  <button data-tab="m2"><span class="n">02</span>衰减沙盘</button>
+  <button data-tab="m3"><span class="n">03</span>错误率阈值推演</button>
+  <button data-tab="m5-stat"><span class="n">04</span>单项标签统计</button>
+  <button data-tab="m6"><span class="n">05</span>核心心律失常子集</button>
+</nav>
+
+<div class="wrap">
+
+<!-- ============ 模块1 · 数据库标签质量 ============ -->
+<section id="m1" class="mod active">
+  <p class="lead">模块一 · 数据库标签质量全景。先看清楚我们喂给模型的"原料"到底有多脏：<b>总体判准率、错误类型分布、39 个诊断标签各自的漏标率与误标率、专家填补的"装不下"的 OOV 词汇，以及纠正共现的互动热图</b>。</p>
+  <div class="tiles" id="m1-tiles"></div>
+
+  <div class="grid" style="grid-template-columns:1.15fr 1fr;margin-top:16px;">
+    <div class="panel">
+      <h3>错误类型分布<span class="tag">人工偏差分类 · 10 类</span></h3>
+      <p class="desc">研究团队对 364 条不准确记录逐条标注偏差类型。切换查看"含该类型"或"纯类型"计数。</p>
+      <div class="row" style="margin-bottom:10px;">
+        <button class="btn toggle on" id="et-by">含该类型</button>
+        <button class="btn toggle" id="et-pure">纯类型</button>
+      </div>
+      <svg id="err-bars" viewBox="0 0 560 360" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="note" id="et-note"></div>
+    </div>
+    <div class="panel">
+      <h3>逐标签：漏标 vs 误标<span class="tag">39 诊断单元</span></h3>
+      <p class="desc">每个气泡 = 一个诊断标签。横轴漏标率（被漏写），纵轴误标率 FDR（被错写），气泡大小=临床负担，颜色=临床重要性。越靠右上越危险。</p>
+      <svg id="dx-scatter" viewBox="0 0 560 360" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="legend">
+        <span><i style="background:var(--bad)"></i>5分(高)</span>
+        <span><i style="background:var(--warn)"></i>3分(中)</span>
+        <span><i style="background:var(--pri)"></i>1分(一般)</span>
+        <span style="margin-left:auto">气泡面积 ∝ 临床负担</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h3>全部 39 个诊断标签的"双率"清单<span class="tag">可排序</span></h3>
+    <p class="desc">按临床重要性 ×（漏标+½误标）排序。点击列头切换排序键。"—"表示该标签专家判定为 0 例（无漏标率）或数据库未记录（无误标率）。</p>
+    <div class="row" style="margin-bottom:8px;">
+      <button class="btn toggle on" id="sort-burden">按临床负担</button>
+      <button class="btn toggle" id="sort-qfn">按漏标率</button>
+      <button class="btn toggle" id="sort-fdr">按误标率</button>
+      <span style="font-size:12px;color:var(--dim);margin-left:auto">共 39 行</span>
+    </div>
+    <svg id="dx-table" viewBox="0 0 1100 1080" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h3>OOV 词汇：专家填补的"装不下"的诊断<span class="tag">30 类 · 100% 漏标</span></h3>
+    <p class="desc">数据库只有 39 个固定标签的编码能力。下列诊断专家用过、但数据库无法表达 → 训练时模型永远学不到。<b>每个 OOV 在数据库中相当于 100% 漏标</b>（qfn=100%）。</p>
+    <svg id="oov-bars" viewBox="0 0 1100 560" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="note" id="oov-note"></div>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h3>纠正共现互动热图<span class="tag">数据库标签 → 专家替换</span></h3>
+    <p class="desc">纵轴=被删除的数据库标签（前 15 位），横轴=专家新增标签（前 15 位），颜色越深共现越多。鼠标悬停查看次数，下方挑战模式测一测你对临床纠正常识的直觉。</p>
+    <svg id="cooc-heat" viewBox="0 0 1100 480" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="note" style="margin-top:6px;">共 89 对热图格子（89 / 225 ≈ 39.6% 非空），主对角线模式：专家把含糊的 DB 标签聚类到几个大标签（ST-T改变、心房颤动、右束支阻滞）。</div>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h3>互动推导实验室<span class="tag" style="color:var(--sky);border-color:var(--sky2);">指标定义 · 2×2 · 三层状态</span></h3>
+    <p class="desc">本面板是 v15.0 报告中"指标定义 + 2×2 列联表 + 三层状态示意图 + 衰减推导链"的互动版。所有中间变量与最终指标随模块二、三的滑块（Se<sub>app</sub>/Sp<sub>app</sub>/π/qfn/FDR）<b style="color:var(--pri)">实时联动</b>——拖动上方任意滑块，本表内所有数值都会刷新。</p>
+
+    <div class="grid" style="grid-template-columns:1.2fr 1.2fr 1.1fr;gap:14px;align-items:start;">
+      <!-- ①输入层：5个滑块 -->
+      <div class="panel" style="background:rgba(255,180,84,0.04);border-color:rgba(255,180,84,0.4);">
+        <h3 style="color:var(--pri);">① 输入层（拖动调节）</h3>
+        <div class="ctl"><label>账面灵敏度 Se<sub>app</sub> <span class="val" id="dl-v-seapp">—</span></label>
+          <input type="range" id="dl-s-seapp" min="0.3" max="1" step="0.01" value="0.85"></div>
+        <div class="ctl"><label>账面特异度 Sp<sub>app</sub> <span class="val" id="dl-v-spapp">—</span></label>
+          <input type="range" id="dl-s-spapp" min="0.3" max="1" step="0.01" value="0.85"></div>
+        <div class="ctl"><label>患病率 π <span class="val" id="dl-v-pi">—</span></label>
+          <input type="range" id="dl-s-pi" min="0.005" max="0.4" step="0.001" value="0.047"></div>
+        <div class="ctl"><label>数据库漏标率 qfn <span class="val" id="dl-v-qfn">—</span></label>
+          <input type="range" id="dl-s-qfn" min="0" max="0.6" step="0.005" value="0.323"></div>
+        <div class="ctl"><label>数据库误标率 FDR <span class="val" id="dl-v-fdr">—</span></label>
+          <input type="range" id="dl-s-fdr" min="0" max="0.6" step="0.005" value="0.317"></div>
+        <div class="row" style="margin-top:6px;">
+          <button class="btn amber" id="dl-sync-from-m2" style="font-size:12px;">↺ 从模块二同步</button>
+          <button class="btn amber" id="dl-sync-from-m3" style="font-size:12px;">↺ 同步噪声</button>
+        </div>
+      </div>
+
+      <!-- ②推导层：6个公式 -->
+      <div class="panel" style="background:rgba(255,209,102,0.04);border-color:rgba(255,209,102,0.4);">
+        <h3 style="color:var(--warn);">② 推导层（公式链）</h3>
+        <div id="dl-formulas" style="font-family:var(--mono);font-size:12px;line-height:1.95;"></div>
+      </div>
+
+      <!-- ③输出层：6个最终指标 -->
+      <div class="panel" style="background:rgba(95,227,161,0.04);border-color:rgba(95,227,161,0.4);">
+        <h3 style="color:var(--good);">③ 输出层（真金标准下的指标）</h3>
+        <div id="dl-outputs" style="font-family:var(--mono);font-size:13px;line-height:2.1;"></div>
+        <div class="note" style="margin-top:6px;font-size:11.5px;">AUC 由双正态模型 Φ((Φ⁻¹(Se)+Φ⁻¹(Sp))/√2) 计算。</div>
+      </div>
+    </div>
+
+    <!-- 三层状态与两类错误示意 -->
+    <div class="panel" style="margin-top:14px;background:rgba(255,122,182,0.04);border-color:rgba(255,122,182,0.35);">
+      <h3 style="color:var(--acc);">三层状态与两类错误 · 实时计数（按 N=10000 模拟样本）</h3>
+      <p class="desc">从"假金标准（训练时的脏标签）" → "模型预测" → "真金标准（评估时的专家判定）"——三层关系图。每个方框代表一组样本（阳性 Y / 阴性 N），数字随输入层滑块实时刷新。</p>
+      <svg id="dl-three-layer" viewBox="0 0 1100 260" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+
+    <!-- 2x2 列联表：账面 vs 真金标准 -->
+    <div class="panel" style="margin-top:14px;background:rgba(76,199,255,0.04);border-color:rgba(76,199,255,0.35);">
+      <h3 style="color:var(--sky);">2×2 列联表：账面（按假金标准） vs 真金标准</h3>
+      <p class="desc">两套计数：左表是模型预测 vs <b>假金标准</b>（账面指标来源），右表是模型预测 vs <b>真金标准</b>（真实指标来源）。两表行/列结构相同，差异完全来自假金标准的标签错位。</p>
+      <div id="dl-twobytwo" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;"></div>
+      <div id="dl-metric-table" style="margin-top:14px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 模块2 · 衰减沙盘（合并原 M2+M3） ============ -->
+<section id="m2" class="mod">
+  <p class="lead">模块二 · 衰减沙盘。顶部<b style="color:var(--pri)">能力雷达</b>俯瞰六指标衰减，中段拖动左侧<b>模型能力</b>滑块 / 右侧<b style="color:var(--bad)">数据库噪声</b>滑块，<b style="color:var(--acc)">衰减柱</b>立即刷新——同一行对照<b>账面（按假金标准 = 数据库原始标签）</b>与<b style="color:var(--good)">真金标准（按专家最终判定）</b>。下方<b>信号场</b>展示 4 类粒子的实时分布，最末<b>贝叶斯 / Bootstrap</b>传播不确定性区间。</p>
+  <div class="panel">
+    <h3>组合式能力雷达图<span class="tag">账面 vs 真金标准 vs 衰减</span></h3>
+    <p class="desc">六轴（Se/Sp/PPV/NPV/F1/AUC）<b style="color:var(--acc)">账面（按假金标准）</b>与<b style="color:var(--good)">真金标准</b>双多边形重叠显示，<b style="color:var(--pri)">衰减幅度</b>以虚线轮廓勾勒——一眼看出哪几个指标缩水最多。联动下方全部滑块实时刷新。</p>
+    <div class="grid" style="grid-template-columns:2fr 1fr;align-items:start;gap:14px;">
+      <svg id="radar" viewBox="0 0 820 380" preserveAspectRatio="xMidYMid meet"></svg>
+      <div>
+        <div class="legend" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <span><i style="background:var(--acc);opacity:0.55"></i>账面（按假金标准 = 数据库原始标签）</span>
+          <span><i style="background:var(--good);opacity:0.55"></i>真金标准（按专家最终判定）</span>
+          <span><i style="background:transparent;border:2px dashed var(--pri)"></i>衰减幅度 = 账面 − 真金标准</span>
+        </div>
+        <div class="note" id="radar-note" style="margin-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1.15fr;">
+    <div class="panel">
+      <h3>模型能力控制台</h3>
+      <p class="desc">"模型能力 c" 为全局潜力（默认令 Se=Sp=c）。可单独微调账面灵敏度 / 特异度，并设定患病率 π。拖动时右侧沙盘<b>实时联动</b>。</p>
+      <div class="ctl"><label>模型能力潜力 c <span class="val" id="v-c">0.85</span></label>
+        <input type="range" id="s-c" min="0.5" max="1" step="0.01" value="0.85"></div>
+      <div class="ctl"><label>账面灵敏度 Se<sub>app</sub> <span class="val" id="v-se">0.85</span></label>
+        <input type="range" id="s-se" min="0.3" max="1" step="0.01" value="0.85"></div>
+      <div class="ctl"><label>账面特异度 Sp<sub>app</sub> <span class="val" id="v-sp">0.85</span></label>
+        <input type="range" id="s-sp" min="0.3" max="1" step="0.01" value="0.85"></div>
+      <div class="ctl"><label>患病率 π（数据中阳性比例） <span class="val" id="v-pi">4.7%</span></label>
+        <input type="range" id="s-pi" min="0.005" max="0.4" step="0.001" value="0.047"></div>
+      <div class="row" style="margin-top:6px;">
+        <button class="btn amber" id="m2-preset">载入"顶尖模型"预设 (c=0.97)</button>
+        <button class="btn" id="m2-reset">重置</button>
+      </div>
+      <div class="note" id="m2-note"></div>
+      <div class="tiles" id="m2-kpi" style="margin-top:10px;"></div>
+    </div>
+    <div class="panel">
+      <h3>六指标衰减：账面 vs 真金标准<span class="tag">实时联动</span></h3>
+      <p class="desc">每行一对柱：<b style="color:var(--acc)">左柱=账面（假金标准）</b>，<b style="color:var(--good)">右柱=真金标准</b>，右侧红字=衰减（账面−真金标准，>0 即账面掺水）。</p>
+      <svg id="decay-bars" viewBox="0 0 720 380" preserveAspectRatio="xMidYMid meet"></svg>
+      <div style="margin-top:16px;padding:12px 14px;background:rgba(255,87,87,0.06);border:1px solid rgba(255,87,87,0.35);border-radius:10px;">
+        <h3 style="margin:0 0 4px 0;font-size:15px;color:var(--bad);">数据库噪声强度调节器<span class="tag" style="color:var(--pri);border-color:var(--line);">实时</span></h3>
+        <p class="desc" style="margin-bottom:8px;">拖动改变<b>数据库</b>漏标率 / 误标率（FDR）——上方衰减柱与雷达图会立即刷新。下方可一键回到数据库总体噪声值，或按<b>具体诊断标签 / OOV 词汇</b>单独还原该标签的实证噪声。</p>
+        <div class="grid" style="grid-template-columns:1fr 1fr 1fr;">
+          <div class="ctl"><label>数据库漏标率 qfn <span class="val" id="v-qfn">32.3%</span></label>
+            <input type="range" id="s-qfn" min="0" max="0.6" step="0.005" value="0.323"></div>
+          <div class="ctl"><label>数据库误标率 FDR <span class="val" id="v-fdr">31.7%</span></label>
+            <input type="range" id="s-fdr" min="0" max="0.6" step="0.005" value="0.317"></div>
+          <div class="ctl" style="display:flex;flex-direction:column;justify-content:flex-end;">
+            <button class="btn amber" id="m3-reset">↺ 还原数据库总体噪声值</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px;gap:8px;">
+          <label style="font-size:12.5px;color:var(--dim);white-space:nowrap;">按具体标签还原：</label>
+          <select id="m2-restore-target" style="flex:1;min-width:0;"></select>
+          <button class="btn amber" id="m2-restore-one" style="white-space:nowrap;">↺ 仅还原所选标签</button>
+          <span class="note" id="m2-restore-info" style="font-size:12px;color:var(--dim);margin-left:6px;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h3>信号场 · 真实正确率<span class="tag" style="color:var(--pri);border-color:var(--line);">4 类粒子 · 全宽视图</span></h3>
+    <p class="desc">每个粒子 = 一个样本。配色按 <b>账面（按假金标准）</b> × <b style="color:var(--good)">真金标准</b> 的二维命中拆分，<b style="color:var(--acc)">性能蒸发</b>粒子即"账面正确但真金标准错误"——这就是 账面 − 真实 的可视化来源。拖动上方 qfn/FDR 滑块时观察蒸发粒子比例的变化。下方指标实时刷新。</p>
+    <canvas id="particle" class="viz" width="1100" height="380"></canvas>
+    <div class="legend" id="sig-legend" style="margin-top:10px;font-size:12px;">
+      <span><i style="background:#5fe3a1;outline:1px solid #c9f3da"></i>稳定正确 <b id="sig-c1" style="color:#a8f0c8">—</b></span>
+      <span><i style="background:#ff7ab6;outline:1px solid #ffd0e6"></i>性能蒸发 <b id="sig-c2" style="color:#ffb3d6">—</b></span>
+      <span><i style="background:#4cc7ff;outline:1px solid #a0e1ff"></i>意外反转 <b id="sig-c3" style="color:#a0e1ff">—</b></span>
+      <span><i style="background:#ff5757;outline:1px solid #ffb0b0"></i>稳定错误 <b id="sig-c4" style="color:#ffb0b0">—</b></span>
+      <span style="margin-left:auto;color:var(--dim);">账面 = 稳定+蒸发 · 真金标准 = 稳定+反转</span>
+    </div>
+    <div class="row" style="margin-top:10px;justify-content:space-between;">
+      <span class="kpi">账面正确率 <b id="acc-app" style="color:var(--acc)">—</b></span>
+      <span class="kpi">真金标准正确率 <b id="acc-tru" style="color:var(--good)">—</b></span>
+      <span class="kpi">性能蒸发 <b id="acc-loss" style="color:var(--bad)">—</b></span>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h3>不确定性传播：贝叶斯 &amp; Bootstrap</h3>
+    <p class="desc">点击运行：从漏标率/误标率的<b>贝叶斯后验</b>（Beta）、以及 39 标签的<b>Bootstrap 重抽样</b>各抽 500 套，传播出"衰减量"的分布，给出均值与 95% 区间。白色竖线=点估计（当前衰减）。</p>
+    <div class="row" style="margin-bottom:8px;">
+      <label style="font-size:12.5px;color:var(--dim)">评估指标：</label>
+      <select id="m3-metric">
+        <option value="AUC">AUC 衰减</option><option value="Se">灵敏度 衰减</option>
+        <option value="Sp">特异度 衰减</option><option value="PPV">PPV 衰减</option>
+        <option value="NPV">NPV 衰减</option><option value="F1">F1 衰减</option>
+      </select>
+      <button class="btn amber" id="run-bayes">▶ 贝叶斯后验传播</button>
+      <label style="font-size:12px;color:var(--dim);display:flex;gap:4px;align-items:center;">
+        抽样 n=<input type="number" id="n-bayes" min="50" max="2000" step="50" value="500" style="width:80px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-family:var(--mono);">
+      </label>
+      <button class="btn amber" id="run-boot">▶ Bootstrap 重抽样</button>
+      <label style="font-size:12px;color:var(--dim);display:flex;gap:4px;align-items:center;">
+        抽样 n=<input type="number" id="n-boot" min="50" max="2000" step="50" value="500" style="width:80px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-family:var(--mono);">
+      </label>
+      <button class="btn" id="clear-hist">清除</button>
+      <span class="scan" id="hist-info"></span>
+    </div>
+    <canvas id="hist" class="viz" width="1040" height="260"></canvas>
+  </div>
+</section>
+
+<!-- ============ 模块3 · 错误率阈值推演（原 M4） ============ -->
+<section id="m3" class="mod">
+  <p class="lead">模块三 · 错误率阈值推演。给定模型能力 c 与可接受的"性能损失上限 Δ"，反推<b>数据库漏标率</b>必须压到多低。结合模型学习潜力，看"更好的模型能否容忍更脏的标签"。下方"真金标准"=专家最终判定。</p>
+  <div class="grid" style="grid-template-columns:1.1fr 1fr;">
+    <div class="panel">
+      <h3>容忍边界曲线</h3>
+      <p class="desc">横轴数据库漏标率 qfn，纵轴真金标准下真实指标。绿区=安全（损失≤Δ），红区=危险。白虚线=当前实证漏标率。</p>
+      <svg id="thr-plot" viewBox="0 0 620 400" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div class="panel">
+      <h3>阈值推演控制台</h3>
+      <div class="ctl"><label>模型能力 c <span class="val" id="v-c4">0.85</span></label>
+        <input type="range" id="s-c4" min="0.5" max="1" step="0.01" value="0.85"></div>
+      <div class="ctl"><label>可接受损失上限 Δ <span class="val" id="v-delta">0.05</span></label>
+        <input type="range" id="s-delta" min="0.01" max="0.15" step="0.005" value="0.05"></div>
+      <div class="ctl"><label>数据库误标率 FDR（固定） <span class="val" id="v-fdr4">31.7%</span></label>
+        <input type="range" id="s-fdr4" min="0" max="0.6" step="0.005" value="0.317"></div>
+      <div class="ctl"><label>评估指标</label>
+        <select id="s-metric4" style="width:100%">
+          <option value="Se">灵敏度 Se</option><option value="Sp">特异度 Sp</option>
+          <option value="PPV">阳性预测值 PPV</option><option value="NPV">阴性预测值 NPV</option>
+          <option value="F1">F1</option><option value="AUC">AUC</option>
+        </select></div>
+      <div class="tiles" id="m4-kpi" style="margin-top:6px;"></div>
+      <div class="note" id="m4-note"></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px;">
+    <h3>模型潜力 × 容忍阈值：qfn<sub>max</sub> 随 c 的地形</h3>
+    <p class="desc">对同一指标，更好的模型（c 更大）能容忍更高的漏标率。曲线标注当前实证漏标率（红点）。</p>
+    <svg id="c-plot" viewBox="0 0 1040 320" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+</section>
+
+<!-- ===== M5 单项标签统计 ===== -->
+<section class="mod" id="m5-stat">
+  <p class="lead">单项标签统计 —— 面向临床医生：看清<b>每一种诊断标签</b>的噪声如何侵蚀模型可信度。下拉切换 12 个临床视角。</p>
+  <div class="panel">
+    <div class="row" style="align-items:flex-end;gap:10px;flex-wrap:wrap">
+      <label class="ctl" style="flex:0 0 340px;margin:0"><span style="font-size:12px;color:var(--dim)">统计视图（临床视角）</span>
+        <select id="pd-view" style="width:100%;margin-top:6px"></select></label>
+      <label class="ctl" id="pd-dxwrap" style="flex:0 0 220px;margin:0;display:none"><span style="font-size:12px;color:var(--dim)">选择诊断</span>
+        <select id="pd-dx" style="width:100%;margin-top:6px"></select></label>
+      <div class="note" id="pd-sub" style="flex:1;min-width:240px;margin:0"></div>
+    </div>
+    <canvas id="pd-canvas" class="viz" style="height:430px;margin-top:12px"></canvas>
+    <div class="note" id="pd-note" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<!-- ============ 模块6 · 核心心律失常错误子集细化分析 ============ -->
+<section id="m6" class="mod">
+  <p class="lead">模块五 · 核心心律失常诊断错误/缺失的子集细化分析。在<b>主分析集 613 例总体四率</b>之外，进一步拆解「类型01：核心心律失常诊断错误或缺失」子集的<b>错误子型 A/B/C/D、真值病种分布、共现结构、严重程度与三层归因</b>，并以 <b style="color:var(--sky)">PTB-XL 双阅</b> 作为外部对照。切换 <b>含 / 纯</b> 子集可联动下方错误子型与帕累托图。</p>
+
+  <div class="tiles" id="sub-kpi"></div>
+  <div class="note" id="sub-kpi-note"></div>
+
+  <div class="row" style="margin:14px 0 4px;">
+    <button class="btn toggle on" id="sub-full">含类型01（n=125）</button>
+    <button class="btn toggle" id="sub-pure">纯类型01（n=37）</button>
+    <span style="font-size:12px;color:var(--dim);margin-left:auto;">含 = 偏差类型含核心心律失常；纯 = 偏差类型仅有核心心律失常</span>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="panel">
+      <h3>错误子型 A / B / C / D<span class="tag">可点击看定义</span></h3>
+      <p class="desc">基于 combo_pattern_cn（原始）vs correctLabel（真值）透明规则推导。点击柱条查看判定规则与临床含义。</p>
+      <svg id="sub-abcd" viewBox="0 0 560 300" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="note" id="sub-abcd-note"></div>
+    </div>
+    <div class="panel">
+      <h3>真值核心病种分布<span class="tag">按真值</span></h3>
+      <p class="desc">子集内病例的「真值」核心心律失常病种。悬停查看计数。</p>
+      <svg id="sub-disease" viewBox="0 0 560 300" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="note" id="sub-disease-note"></div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+    <div class="panel">
+      <h3>严重程度分级（临床决策影响）<span class="tag">高危 / 中危 / 低危</span></h3>
+      <p class="desc">按真值病种映射：高危=室速/室颤/高度AVB/病窦；中危=房性快速心律失常；低危=以描述为主。悬停查看口径。</p>
+      <svg id="sub-sev" viewBox="0 0 560 280" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div class="panel">
+      <h3>错误子型帕累托图<span class="tag">致因排序</span></h3>
+      <p class="desc">柱=各子型病例数，折线=累计占比，一眼识别主要致因。</p>
+      <svg id="sub-pareto" viewBox="0 0 560 280" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h3>11 类偏差共现结构（Jaccard）<span class="tag">悬停看系数</span></h3>
+    <p class="desc">纵轴=被标注的偏差类型，横轴=共现的偏差类型，颜色越深 Jaccard 共现越高（粉色描边=类型01 核心心律失常）。鼠标悬停查看具体系数。</p>
+    <svg id="sub-cooc" viewBox="0 0 1100 640" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="note" id="sub-cooc-note"></div>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h3>外部对照：PTB-XL 双阅（101 对）<span class="tag">读者 vs 读者</span></h3>
+    <p class="desc">同一高质量公开库中两位专科医师独立双阅，用以反衬宁波错误的系统性来源。下方对比「宁波类型01 误标率」与「PTB-XL 结构码一致率 / 判定分歧率」。</p>
+    <div class="tiles" id="sub-ptbxl" style="margin-bottom:10px;"></div>
+    <svg id="sub-ptbxl-bar" viewBox="0 0 1100 240" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="note" id="sub-ptbxl-note"></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px;">
+    <div class="panel">
+      <h3>三层归因分析<span class="tag">数据 / 算法 / 人为</span></h3>
+      <p class="desc">基于可获取数据信号的三层归因（算法层为强证据推断，非直接测量）。</p>
+      <div id="sub-attr"></div>
+    </div>
+    <div class="panel">
+      <h3>典型案例（原始标注 vs 专家回看）<span class="tag">A / B / D</span></h3>
+      <p class="desc">各取一例展示原始标注与专家回看的差异。</p>
+      <div id="sub-cases"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px;">
+    <h3>改进建议<span class="tag">针对前三位根因</span></h3>
+    <ol id="sub-recs" style="margin:0;padding-left:20px;"></ol>
+  </div>
+
+  <div class="note" style="margin-top:16px;line-height:1.8;">
+    <b>方法学与口径说明：</b>① 子集口径以可逐例枚举的<b>明细数据</b>为准（含 125 / 纯 37），与汇总表口径（170/45）存在差异，已在正文中标注；② A/B/C/D 由规则推导，C 类「主次不分」与 D 类「表述不规范」未完全自动区分，合并计入 D 并需人工复核；③ 类型01 误标率显著高于 364 例不准确基线（Fisher OR=2.44 [1.39–4.34], p=1.2×10⁻³）；④ PTB-XL 为「读者 vs 读者」、宁波为「医师标注 vs 专家回看」，对照仅用于提示系统性程度；⑤ 高危病种（室速/室颤/高度AVB/病窦）合计例数极少，相关率仅作方向性提示。
+  </div>
+</section>
+
+
+<footer>
+  心电图 AI 标签噪声模拟器 · 基于 KimiWork v15.0 分析框架 · 数据：宁波数据库去重后 613 主分析集 / 39 诊断单元<br/>
+  方法：训练端前推公式 Se<sub>真</sub>=Se<sub>账面</sub>(1−qfn)+(1−Sp<sub>账面</sub>)qfn · 双正态 AUC · Beta 后验 / Bootstrap 不确定性传播
+</footer>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+/* =================== 数据（来自 R extract.R） =================== */
+const DATA = {
+ "meta": {
+  "n_main": 613,
+  "n_acc": 274,
+  "n_inacc": 339,
+  "n_miss": 10,
+  "overall_acc": 0.447,
+  "n_units": 39,
+  "qfn_s": 0.3233,
+  "fdr_s": 0.3173,
+  "avg_prev": 0.0474,
+  "total_prev": 0.0474,
+  "qfp_s": 0.0156,
+  "TPs": 766,
+  "FPs": 356,
+  "FNs": 366,
+  "TNs": 22419,
+  "pr_mis_alpha": 0.3286,
+  "pr_mis_beta": 0.6877,
+  "pr_err_alpha": 0.2849,
+  "pr_err_beta": 0.613,
+  "bayes_qfn_a": 366.3286,
+  "bayes_qfn_b": 766.6877,
+  "bayes_fdr_a": 356.2849,
+  "bayes_fdr_b": 766.613
+ },
+ "per_dx": [
+  {
+   "unit": "心房颤动",
+   "cat": "2_室上性心律失常",
+   "sev": 5,
+   "n_db": 33,
+   "n_exp": 128,
+   "TP": 32,
+   "FP": 1,
+   "FN": 96,
+   "TN": 484,
+   "qfn_dx": 0.75,
+   "fdr_dx": 0.0303,
+   "prevalence": 0.2088,
+   "ppv": 0.9697,
+   "sens": 0.25,
+   "spec": 0.9979,
+   "burden": 482.5
+  },
+  {
+   "unit": "心房扑动",
+   "cat": "2_室上性心律失常",
+   "sev": 5,
+   "n_db": 116,
+   "n_exp": 23,
+   "TP": 21,
+   "FP": 95,
+   "FN": 2,
+   "TN": 495,
+   "qfn_dx": 0.087,
+   "fdr_dx": 0.819,
+   "prevalence": 0.0375,
+   "ppv": 0.181,
+   "sens": 0.913,
+   "spec": 0.839,
+   "burden": 247.5
+  },
+  {
+   "unit": "ST-T改变",
+   "cat": "10_ST-T改变",
+   "sev": 1,
+   "n_db": 20,
+   "n_exp": 127,
+   "TP": 18,
+   "FP": 2,
+   "FN": 109,
+   "TN": 484,
+   "qfn_dx": 0.8583,
+   "fdr_dx": 0.1,
+   "prevalence": 0.2072,
+   "ppv": 0.9,
+   "sens": 0.1417,
+   "spec": 0.9959,
+   "burden": 110
+  },
+  {
+   "unit": "T波改变",
+   "cat": "10_ST-T改变",
+   "sev": 1,
+   "n_db": 130,
+   "n_exp": 149,
+   "TP": 87,
+   "FP": 43,
+   "FN": 62,
+   "TN": 421,
+   "qfn_dx": 0.4161,
+   "fdr_dx": 0.3308,
+   "prevalence": 0.2431,
+   "ppv": 0.6692,
+   "sens": 0.5839,
+   "spec": 0.9073,
+   "burden": 83.5
+  },
+  {
+   "unit": "右束支阻滞",
+   "cat": "5_束支传导阻滞",
+   "sev": 1,
+   "n_db": 10,
+   "n_exp": 48,
+   "TP": 10,
+   "FP": 0,
+   "FN": 38,
+   "TN": 565,
+   "qfn_dx": 0.7917,
+   "fdr_dx": 0,
+   "prevalence": 0.0783,
+   "ppv": 1,
+   "sens": 0.2083,
+   "spec": 1,
+   "burden": 38
+  },
+  {
+   "unit": "异常Q波",
+   "cat": "9_心肌缺血梗死",
+   "sev": 3,
+   "n_db": 22,
+   "n_exp": 27,
+   "TP": 17,
+   "FP": 5,
+   "FN": 10,
+   "TN": 581,
+   "qfn_dx": 0.3704,
+   "fdr_dx": 0.2273,
+   "prevalence": 0.044,
+   "ppv": 0.7727,
+   "sens": 0.6296,
+   "spec": 0.9915,
+   "burden": 37.5
+  },
+  {
+   "unit": "室性早搏",
+   "cat": "3_室性心律失常",
+   "sev": 3,
+   "n_db": 6,
+   "n_exp": 17,
+   "TP": 5,
+   "FP": 1,
+   "FN": 12,
+   "TN": 595,
+   "qfn_dx": 0.7059,
+   "fdr_dx": 0.1667,
+   "prevalence": 0.0277,
+   "ppv": 0.8333,
+   "sens": 0.2941,
+   "spec": 0.9983,
+   "burden": 37.5
+  },
+  {
+   "unit": "T波倒置",
+   "cat": "10_ST-T改变",
+   "sev": 1,
+   "n_db": 57,
+   "n_exp": 13,
+   "TP": 13,
+   "FP": 44,
+   "FN": 0,
+   "TN": 556,
+   "qfn_dx": 0,
+   "fdr_dx": 0.7719,
+   "prevalence": 0.0212,
+   "ppv": 0.2281,
+   "sens": 1,
+   "spec": 0.9267,
+   "burden": 22
+  },
+  {
+   "unit": "全导联低电压QRS",
+   "cat": "8_QRS低电压",
+   "sev": 1,
+   "n_db": 23,
+   "n_exp": 1,
+   "TP": 1,
+   "FP": 22,
+   "FN": 0,
+   "TN": 590,
+   "qfn_dx": 0,
+   "fdr_dx": 0.9565,
+   "prevalence": 0.0016,
+   "ppv": 0.0435,
+   "sens": 1,
+   "spec": 0.9641,
+   "burden": 11
+  },
+  {
+   "unit": "ST段压低",
+   "cat": "10_ST-T改变",
+   "sev": 1,
+   "n_db": 28,
+   "n_exp": 8,
+   "TP": 8,
+   "FP": 20,
+   "FN": 0,
+   "TN": 585,
+   "qfn_dx": 0,
+   "fdr_dx": 0.7143,
+   "prevalence": 0.0131,
+   "ppv": 0.2857,
+   "sens": 1,
+   "spec": 0.9669,
+   "burden": 10
+  },
+  {
+   "unit": "ST段延长",
+   "cat": "10_ST-T改变",
+   "sev": 1,
+   "n_db": 17,
+   "n_exp": 0,
+   "TP": 0,
+   "FP": 17,
+   "FN": 0,
+   "TN": 596,
+   "qfn_dx": null,
+   "fdr_dx": 1,
+   "prevalence": 0,
+   "ppv": 0,
+   "sens": null,
+   "spec": 0.9723,
+   "burden": 8.5
+  },
+  {
+   "unit": "轴向右移",
+   "cat": "13_电轴偏移",
+   "sev": 1,
+   "n_db": 17,
+   "n_exp": 23,
+   "TP": 16,
+   "FP": 1,
+   "FN": 7,
+   "TN": 589,
+   "qfn_dx": 0.3043,
+   "fdr_dx": 0.0588,
+   "prevalence": 0.0375,
+   "ppv": 0.9412,
+   "sens": 0.6957,
+   "spec": 0.9983,
+   "burden": 7.5
+  },
+  {
+   "unit": "侧壁心肌梗死",
+   "cat": "9_心肌缺血梗死",
+   "sev": 5,
+   "n_db": 3,
+   "n_exp": 0,
+   "TP": 0,
+   "FP": 3,
+   "FN": 0,
+   "TN": 610,
+   "qfn_dx": null,
+   "fdr_dx": 1,
+   "prevalence": 0,
+   "ppv": 0,
+   "sens": null,
+   "spec": 0.9951,
+   "burden": 7.5
+  },
+  {
+   "unit": "室内差异传导",
+   "cat": "5_束支传导阻滞",
+   "sev": 1,
+   "n_db": 18,
+   "n_exp": 7,
+   "TP": 6,
+   "FP": 12,
+   "FN": 1,
+   "TN": 594,
+   "qfn_dx": 0.1429,
+   "fdr_dx": 0.6667,
+   "prevalence": 0.0114,
+   "ppv": 0.3333,
+   "sens": 0.8571,
+   "spec": 0.9802,
+   "burden": 7
+  },
+  {
+   "unit": "窦性心律",
+   "cat": "1_窦性心律及相关",
+   "sev": 1,
+   "n_db": 105,
+   "n_exp": 110,
+   "TP": 104,
+   "FP": 1,
+   "FN": 6,
+   "TN": 502,
+   "qfn_dx": 0.0545,
+   "fdr_dx": 0.0095,
+   "prevalence": 0.1794,
+   "ppv": 0.9905,
+   "sens": 0.9455,
+   "spec": 0.998,
+   "burden": 6.5
+  },
+  {
+   "unit": "房性早搏",
+   "cat": "2_室上性心律失常",
+   "sev": 1,
+   "n_db": 25,
+   "n_exp": 27,
+   "TP": 22,
+   "FP": 3,
+   "FN": 5,
+   "TN": 583,
+   "qfn_dx": 0.1852,
+   "fdr_dx": 0.12,
+   "prevalence": 0.044,
+   "ppv": 0.88,
+   "sens": 0.8148,
+   "spec": 0.9949,
+   "burden": 6.5
+  },
+  {
+   "unit": "QT间期延长",
+   "cat": "11_QT间期异常",
+   "sev": 1,
+   "n_db": 15,
+   "n_exp": 2,
+   "TP": 2,
+   "FP": 13,
+   "FN": 0,
+   "TN": 598,
+   "qfn_dx": 0,
+   "fdr_dx": 0.8667,
+   "prevalence": 0.0033,
+   "ppv": 0.1333,
+   "sens": 1,
+   "spec": 0.9787,
+   "burden": 6.5
+  },
+  {
+   "unit": "轴向左移",
+   "cat": "13_电轴偏移",
+   "sev": 1,
+   "n_db": 30,
+   "n_exp": 33,
+   "TP": 28,
+   "FP": 2,
+   "FN": 5,
+   "TN": 578,
+   "qfn_dx": 0.1515,
+   "fdr_dx": 0.0667,
+   "prevalence": 0.0538,
+   "ppv": 0.9333,
+   "sens": 0.8485,
+   "spec": 0.9966,
+   "burden": 6
+  },
+  {
+   "unit": "窦性心律不齐",
+   "cat": "1_窦性心律及相关",
+   "sev": 1,
+   "n_db": 37,
+   "n_exp": 29,
+   "TP": 28,
+   "FP": 9,
+   "FN": 1,
+   "TN": 575,
+   "qfn_dx": 0.0345,
+   "fdr_dx": 0.2432,
+   "prevalence": 0.0473,
+   "ppv": 0.7568,
+   "sens": 0.9655,
+   "spec": 0.9846,
+   "burden": 5.5
+  },
+  {
+   "unit": "左心室肥厚",
+   "cat": "7_心室肥大",
+   "sev": 1,
+   "n_db": 12,
+   "n_exp": 2,
+   "TP": 2,
+   "FP": 10,
+   "FN": 0,
+   "TN": 601,
+   "qfn_dx": 0,
+   "fdr_dx": 0.8333,
+   "prevalence": 0.0033,
+   "ppv": 0.1667,
+   "sens": 1,
+   "spec": 0.9836,
+   "burden": 5
+  },
+  {
+   "unit": "三度房室传导阻滞",
+   "cat": "4_房室传导阻滞",
+   "sev": 5,
+   "n_db": 4,
+   "n_exp": 2,
+   "TP": 2,
+   "FP": 2,
+   "FN": 0,
+   "TN": 609,
+   "qfn_dx": 0,
+   "fdr_dx": 0.5,
+   "prevalence": 0.0033,
+   "ppv": 0.5,
+   "sens": 1,
+   "spec": 0.9967,
+   "burden": 5
+  },
+  {
+   "unit": "P波改变",
+   "cat": "12_P波异常",
+   "sev": 1,
+   "n_db": 3,
+   "n_exp": 6,
+   "TP": 2,
+   "FP": 1,
+   "FN": 4,
+   "TN": 606,
+   "qfn_dx": 0.6667,
+   "fdr_dx": 0.3333,
+   "prevalence": 0.0098,
+   "ppv": 0.6667,
+   "sens": 0.3333,
+   "spec": 0.9984,
+   "burden": 4.5
+  },
+  {
+   "unit": "窦性心动过速",
+   "cat": "1_窦性心律及相关",
+   "sev": 1,
+   "n_db": 102,
+   "n_exp": 97,
+   "TP": 96,
+   "FP": 6,
+   "FN": 1,
+   "TN": 510,
+   "qfn_dx": 0.0103,
+   "fdr_dx": 0.0588,
+   "prevalence": 0.1582,
+   "ppv": 0.9412,
+   "sens": 0.9897,
+   "spec": 0.9884,
+   "burden": 4
+  },
+  {
+   "unit": "一度房室传导阻滞",
+   "cat": "4_房室传导阻滞",
+   "sev": 1,
+   "n_db": 21,
+   "n_exp": 16,
+   "TP": 15,
+   "FP": 6,
+   "FN": 1,
+   "TN": 591,
+   "qfn_dx": 0.0625,
+   "fdr_dx": 0.2857,
+   "prevalence": 0.0261,
+   "ppv": 0.7143,
+   "sens": 0.9375,
+   "spec": 0.9899,
+   "burden": 4
+  },
+  {
+   "unit": "左后束支传导阻滞",
+   "cat": "5_束支传导阻滞",
+   "sev": 1,
+   "n_db": 5,
+   "n_exp": 1,
+   "TP": 0,
+   "FP": 5,
+   "FN": 1,
+   "TN": 607,
+   "qfn_dx": 1,
+   "fdr_dx": 1,
+   "prevalence": 0.0016,
+   "ppv": 0,
+   "sens": 0,
+   "spec": 0.9918,
+   "burden": 3.5
+  },
+  {
+   "unit": "室壁早期复极化",
+   "cat": "15_特殊波形",
+   "sev": 1,
+   "n_db": 7,
+   "n_exp": 0,
+   "TP": 0,
+   "FP": 7,
+   "FN": 0,
+   "TN": 606,
+   "qfn_dx": null,
+   "fdr_dx": 1,
+   "prevalence": 0,
+   "ppv": 0,
+   "sens": null,
+   "spec": 0.9886,
+   "burden": 3.5
+  },
+  {
+   "unit": "房性心动过速",
+   "cat": "2_室上性心律失常",
+   "sev": 1,
+   "n_db": 6,
+   "n_exp": 6,
+   "TP": 4,
+   "FP": 2,
+   "FN": 2,
+   "TN": 605,
+   "qfn_dx": 0.3333,
+   "fdr_dx": 0.3333,
+   "prevalence": 0.0098,
+   "ppv": 0.6667,
+   "sens": 0.6667,
+   "spec": 0.9967,
+   "burden": 3
+  },
+  {
+   "unit": "室上性心动过速",
+   "cat": "2_室上性心律失常",
+   "sev": 3,
+   "n_db": 13,
+   "n_exp": 11,
+   "TP": 11,
+   "FP": 2,
+   "FN": 0,
+   "TN": 600,
+   "qfn_dx": 0,
+   "fdr_dx": 0.1538,
+   "prevalence": 0.0179,
+   "ppv": 0.8462,
+   "sens": 1,
+   "spec": 0.9967,
+   "burden": 3
+  },
+  {
+   "unit": "窦性心动过缓",
+   "cat": "1_窦性心律及相关",
+   "sev": 1,
+   "n_db": 211,
+   "n_exp": 209,
+   "TP": 208,
+   "FP": 3,
+   "FN": 1,
+   "TN": 401,
+   "qfn_dx": 0.0048,
+   "fdr_dx": 0.0142,
+   "prevalence": 0.3409,
+   "ppv": 0.9858,
+   "sens": 0.9952,
+   "spec": 0.9926,
+   "burden": 2.5
+  },
+  {
+   "unit": "U波",
+   "cat": "15_特殊波形",
+   "sev": 1,
+   "n_db": 5,
+   "n_exp": 0,
+   "TP": 0,
+   "FP": 5,
+   "FN": 0,
+   "TN": 608,
+   "qfn_dx": null,
+   "fdr_dx": 1,
+   "prevalence": 0,
+   "ppv": 0,
+   "sens": null,
+   "spec": 0.9918,
+   "burden": 2.5
+  },
+  {
+   "unit": "ST段抬高",
+   "cat": "10_ST-T改变",
+   "sev": 5,
+   "n_db": 3,
+   "n_exp": 2,
+   "TP": 2,
+   "FP": 1,
+   "FN": 0,
+   "TN": 610,
+   "qfn_dx": 0,
+   "fdr_dx": 0.3333,
+   "prevalence": 0.0033,
+   "ppv": 0.6667,
+   "sens": 1,
+   "spec": 0.9984,
+   "burden": 2.5
+  },
+  {
+   "unit": "预激综合征",
+   "cat": "6_预激综合征",
+   "sev": 5,
+   "n_db": 1,
+   "n_exp": 0,
+   "TP": 0,
+   "FP": 1,
+   "FN": 0,
+   "TN": 612,
+   "qfn_dx": null,
+   "fdr_dx": 1,
+   "prevalence": 0,
+   "ppv": 0,
+   "sens": null,
+   "spec": 0.9984,
+   "burden": 2.5
+  },
+  {
+   "unit": "室性融合波",
+   "cat": "3_室性心律失常",
+   "sev": 1,
+   "n_db": 4,
+   "n_exp": 0,
+   "TP": 0,
+   "FP": 4,
+   "FN": 0,
+   "TN": 609,
+   "qfn_dx": null,
+   "fdr_dx": 1,
+   "prevalence": 0,
+   "ppv": 0,
+   "sens": null,
+   "spec": 0.9935,
+   "burden": 2
+  },
+  {
+   "unit": "交接区逸搏",
+   "cat": "16_逸搏逸夺心律",
+   "sev": 1,
+   "n_db": 1,
+   "n_exp": 3,
+   "TP": 1,
+   "FP": 0,
+   "FN": 2,
+   "TN": 610,
+   "qfn_dx": 0.6667,
+   "fdr_dx": 0,
+   "prevalence": 0.0049,
+   "ppv": 1,
+   "sens": 0.3333,
+   "spec": 1,
+   "burden": 2
+  },
+  {
+   "unit": "逆时针旋转",
+   "cat": "14_心电向量环改变",
+   "sev": 1,
+   "n_db": 6,
+   "n_exp": 3,
+   "TP": 3,
+   "FP": 3,
+   "FN": 0,
+   "TN": 607,
+   "qfn_dx": 0,
+   "fdr_dx": 0.5,
+   "prevalence": 0.0049,
+   "ppv": 0.5,
+   "sens": 1,
+   "spec": 0.9951,
+   "burden": 1.5
+  },
+  {
+   "unit": "房室传导阻滞",
+   "cat": "4_房室传导阻滞",
+   "sev": 1,
+   "n_db": 3,
+   "n_exp": 0,
+   "TP": 0,
+   "FP": 3,
+   "FN": 0,
+   "TN": 610,
+   "qfn_dx": null,
+   "fdr_dx": 1,
+   "prevalence": 0,
+   "ppv": 0,
+   "sens": null,
+   "spec": 0.9951,
+   "burden": 1.5
+  },
+  {
+   "unit": "PR间期延长",
+   "cat": "11_QT间期异常",
+   "sev": 1,
+   "n_db": 2,
+   "n_exp": 1,
+   "TP": 1,
+   "FP": 1,
+   "FN": 0,
+   "TN": 611,
+   "qfn_dx": 0,
+   "fdr_dx": 0.5,
+   "prevalence": 0.0016,
+   "ppv": 0.5,
+   "sens": 1,
+   "spec": 0.9984,
+   "burden": 0.5
+  },
+  {
+   "unit": "顺时针旋转",
+   "cat": "14_心电向量环改变",
+   "sev": 1,
+   "n_db": 0,
+   "n_exp": 0,
+   "TP": 0,
+   "FP": 0,
+   "FN": 0,
+   "TN": 613,
+   "qfn_dx": null,
+   "fdr_dx": null,
+   "prevalence": 0,
+   "ppv": null,
+   "sens": null,
+   "spec": 1,
+   "burden": 0
+  },
+  {
+   "unit": "二度房室传导阻滞（一型）",
+   "cat": "4_房室传导阻滞",
+   "sev": 3,
+   "n_db": 1,
+   "n_exp": 1,
+   "TP": 1,
+   "FP": 0,
+   "FN": 0,
+   "TN": 612,
+   "qfn_dx": 0,
+   "fdr_dx": 0,
+   "prevalence": 0.0016,
+   "ppv": 1,
+   "sens": 1,
+   "spec": 1,
+   "burden": 0
+  }
+ ],
+ "err_types": [
+  {
+   "type": "类型01：核心心律失常诊断错误或缺失",
+   "n_含": 170,
+   "n_纯": 45,
+   "p_含": 0.467,
+   "p_纯": 0.1236
+  },
+  {
+   "type": "类型02：传导阻滞细化补充",
+   "n_含": 51,
+   "n_纯": 0,
+   "p_含": 0.1401,
+   "p_纯": 0
+  },
+  {
+   "type": "类型03：新增ST-T相关改变",
+   "n_含": 126,
+   "n_纯": 44,
+   "p_含": 0.3462,
+   "p_纯": 0.1209
+  },
+  {
+   "type": "类型04：新增心电轴异常",
+   "n_含": 48,
+   "n_纯": 11,
+   "p_含": 0.1319,
+   "p_纯": 0.0302
+  },
+  {
+   "type": "类型05：新增或细化QRS低电压",
+   "n_含": 6,
+   "n_纯": 1,
+   "p_含": 0.0165,
+   "p_纯": 0.0027
+  },
+  {
+   "type": "类型06：新增异常Q波/R波递增不良",
+   "n_含": 45,
+   "n_纯": 15,
+   "p_含": 0.1236,
+   "p_纯": 0.0412
+  },
+  {
+   "type": "类型08：新增起搏器/起搏心律诊断",
+   "n_含": 16,
+   "n_纯": 0,
+   "p_含": 0.044,
+   "p_纯": 0
+  },
+  {
+   "type": "类型09：新增P波异常/U波等其他次要异常",
+   "n_含": 79,
+   "n_纯": 32,
+   "p_含": 0.217,
+   "p_纯": 0.0879
+  },
+  {
+   "type": "类型10：原多诊断冗余错误",
+   "n_含": 16,
+   "n_纯": 3,
+   "p_含": 0.044,
+   "p_纯": 0.0082
+  },
+  {
+   "type": "其他未分类偏差",
+   "n_含": 52,
+   "n_纯": 52,
+   "p_含": 0.1429,
+   "p_纯": 0.1429
+  }
+ ],
+ "cls_annot": [
+  {
+   "annotator": 4,
+   "标注记录数": 137,
+   "含核心诊断错误记录数": 31,
+   "平均单条匹配偏差数": 1.4234
+  },
+  {
+   "annotator": 5,
+   "标注记录数": 217,
+   "含核心诊断错误记录数": 148,
+   "平均单条匹配偏差数": 1.8618
+  },
+  {
+   "annotator": 8,
+   "标注记录数": 10,
+   "含核心诊断错误记录数": 2,
+   "平均单条匹配偏差数": 1
+  }
+ ],
+ "oov": [
+  {
+   "term": "左心室高电压",
+   "n": 64
+  },
+  {
+   "term": "胸导联R波上升不良",
+   "n": 32
+  },
+  {
+   "term": "肢导联低电压",
+   "n": 17
+  },
+  {
+   "term": "V1导联R/S>1",
+   "n": 13
+  },
+  {
+   "term": "心室起搏心电图",
+   "n": 11
+  },
+  {
+   "term": "心脏起搏器",
+   "n": 11
+  },
+  {
+   "term": "左前分支阻滞",
+   "n": 10
+  },
+  {
+   "term": "PtfV1增大",
+   "n": 7
+  },
+  {
+   "term": "V5导联R/S<1",
+   "n": 5
+  },
+  {
+   "term": "心脏临时起搏器",
+   "n": 5
+  },
+  {
+   "term": "部分心室起搏心电图",
+   "n": 5
+  },
+  {
+   "term": "完全性左束支传导阻滞",
+   "n": 4
+  },
+  {
+   "term": "胸导联低电压",
+   "n": 4
+  },
+  {
+   "term": "室内传导阻滞",
+   "n": 3
+  },
+  {
+   "term": "U波改变",
+   "n": 2
+  },
+  {
+   "term": "右心室肥大",
+   "n": 2
+  },
+  {
+   "term": "心房及心室起搏心电图",
+   "n": 2
+  },
+  {
+   "term": "心房心室起搏心电图",
+   "n": 2
+  },
+  {
+   "term": "窦性心动过缓伴心律不齐",
+   "n": 2
+  },
+  {
+   "term": "窦性心搏",
+   "n": 2
+  },
+  {
+   "term": "V5R/S<1",
+   "n": 1
+  },
+  {
+   "term": "二度I型窦房传导阻滞",
+   "n": 1
+  },
+  {
+   "term": "加速性房性自主心律",
+   "n": 1
+  },
+  {
+   "term": "异位心律",
+   "n": 1
+  },
+  {
+   "term": "心房起搏心律",
+   "n": 1
+  },
+  {
+   "term": "心房颤动,室内差异传导",
+   "n": 1
+  },
+  {
+   "term": "窦房结至心房游走性心律",
+   "n": 1
+  },
+  {
+   "term": "起搏信号",
+   "n": 1
+  },
+  {
+   "term": "部分心室起搏信号",
+   "n": 1
+  },
+  {
+   "term": "间歇性完全性右束支传导阻滞",
+   "n": 1
+  }
+ ],
+ "cooc": [
+  {
+   "del": "心房扑动",
+   "add": "心房颤动",
+   "n": 95
+  },
+  {
+   "del": "T波改变",
+   "add": "ST-T改变",
+   "n": 36
+  },
+  {
+   "del": "心房扑动",
+   "add": "ST-T改变",
+   "n": 35
+  },
+  {
+   "del": "T波倒置",
+   "add": "ST-T改变",
+   "n": 26
+  },
+  {
+   "del": "T波倒置",
+   "add": "心房颤动",
+   "n": 21
+  },
+  {
+   "del": "心房扑动",
+   "add": "右束支阻滞",
+   "n": 15
+  },
+  {
+   "del": "ST段压低",
+   "add": "ST-T改变",
+   "n": 12
+  },
+  {
+   "del": "ST段延长",
+   "add": "ST-T改变",
+   "n": 12
+  },
+  {
+   "del": "心房扑动",
+   "add": "T波改变",
+   "n": 12
+  },
+  {
+   "del": "T波改变",
+   "add": "心房颤动",
+   "n": 11
+  },
+  {
+   "del": "ST段压低",
+   "add": "心房颤动",
+   "n": 9
+  },
+  {
+   "del": "左心室肥厚",
+   "add": "ST-T改变",
+   "n": 9
+  },
+  {
+   "del": "心房扑动",
+   "add": "室性早搏",
+   "n": 9
+  },
+  {
+   "del": "QT间期延长",
+   "add": "心房颤动",
+   "n": 7
+  },
+  {
+   "del": "QT间期延长",
+   "add": "ST-T改变",
+   "n": 6
+  },
+  {
+   "del": "全导联低电压QRS",
+   "add": "心房颤动",
+   "n": 6
+  },
+  {
+   "del": "T波改变",
+   "add": "右束支阻滞",
+   "n": 5
+  },
+  {
+   "del": "室壁早期复极化",
+   "add": "ST-T改变",
+   "n": 5
+  },
+  {
+   "del": "左心室肥厚",
+   "add": "心房颤动",
+   "n": 5
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "ST-T改变",
+   "n": 5
+  },
+  {
+   "del": "T波倒置",
+   "add": "P波改变",
+   "n": 4
+  },
+  {
+   "del": "T波倒置",
+   "add": "T波改变",
+   "n": 4
+  },
+  {
+   "del": "T波倒置",
+   "add": "右束支阻滞",
+   "n": 4
+  },
+  {
+   "del": "全导联低电压QRS",
+   "add": "ST-T改变",
+   "n": 4
+  },
+  {
+   "del": "心房扑动",
+   "add": "异常Q波",
+   "n": 4
+  },
+  {
+   "del": "窦性心动过速",
+   "add": "ST-T改变",
+   "n": 4
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "窦性心律",
+   "n": 4
+  },
+  {
+   "del": "QT间期延长",
+   "add": "T波改变",
+   "n": 3
+  },
+  {
+   "del": "ST段压低",
+   "add": "T波改变",
+   "n": 3
+  },
+  {
+   "del": "T波改变",
+   "add": "室性早搏",
+   "n": 3
+  },
+  {
+   "del": "U波",
+   "add": "心房颤动",
+   "n": 3
+  },
+  {
+   "del": "一度房室传导阻滞",
+   "add": "ST-T改变",
+   "n": 3
+  },
+  {
+   "del": "室内差异传导",
+   "add": "T波改变",
+   "n": 3
+  },
+  {
+   "del": "室内差异传导",
+   "add": "心房颤动",
+   "n": 3
+  },
+  {
+   "del": "左后束支传导阻滞",
+   "add": "ST-T改变",
+   "n": 3
+  },
+  {
+   "del": "异常Q波",
+   "add": "ST-T改变",
+   "n": 3
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "房性早搏",
+   "n": 3
+  },
+  {
+   "del": "QT间期延长",
+   "add": "室性早搏",
+   "n": 2
+  },
+  {
+   "del": "ST段压低",
+   "add": "右束支阻滞",
+   "n": 2
+  },
+  {
+   "del": "T波倒置",
+   "add": "交接区逸搏",
+   "n": 2
+  },
+  {
+   "del": "T波倒置",
+   "add": "室性早搏",
+   "n": 2
+  },
+  {
+   "del": "T波改变",
+   "add": "P波改变",
+   "n": 2
+  },
+  {
+   "del": "T波改变",
+   "add": "轴向右移",
+   "n": 2
+  },
+  {
+   "del": "侧壁心肌梗死",
+   "add": "ST-T改变",
+   "n": 2
+  },
+  {
+   "del": "全导联低电压QRS",
+   "add": "右束支阻滞",
+   "n": 2
+  },
+  {
+   "del": "全导联低电压QRS",
+   "add": "异常Q波",
+   "n": 2
+  },
+  {
+   "del": "右心室肥厚",
+   "add": "ST-T改变",
+   "n": 2
+  },
+  {
+   "del": "右心室肥厚",
+   "add": "轴向右移",
+   "n": 2
+  },
+  {
+   "del": "室上性心动过速",
+   "add": "ST-T改变",
+   "n": 2
+  },
+  {
+   "del": "室内差异传导",
+   "add": "ST-T改变",
+   "n": 2
+  },
+  {
+   "del": "室性融合波",
+   "add": "心房颤动",
+   "n": 2
+  },
+  {
+   "del": "左后束支传导阻滞",
+   "add": "心房颤动",
+   "n": 2
+  },
+  {
+   "del": "左心室肥厚",
+   "add": "P波改变",
+   "n": 2
+  },
+  {
+   "del": "异常Q波",
+   "add": "T波改变",
+   "n": 2
+  },
+  {
+   "del": "异常Q波",
+   "add": "右束支阻滞",
+   "n": 2
+  },
+  {
+   "del": "异常Q波",
+   "add": "心房颤动",
+   "n": 2
+  },
+  {
+   "del": "房性心动过速",
+   "add": "ST-T改变",
+   "n": 2
+  },
+  {
+   "del": "窦性心动过缓",
+   "add": "ST-T改变",
+   "n": 2
+  },
+  {
+   "del": "窦性心动过速",
+   "add": "心房扑动",
+   "n": 2
+  },
+  {
+   "del": "轴向左移",
+   "add": "心房颤动",
+   "n": 2
+  },
+  {
+   "del": "PR间期延长",
+   "add": "ST-T改变",
+   "n": 1
+  },
+  {
+   "del": "PR间期延长",
+   "add": "一度房室传导阻滞",
+   "n": 1
+  },
+  {
+   "del": "QT间期延长",
+   "add": "P波改变",
+   "n": 1
+  },
+  {
+   "del": "QT间期延长",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "QT间期延长",
+   "add": "轴向右移",
+   "n": 1
+  },
+  {
+   "del": "ST段压低",
+   "add": "P波改变",
+   "n": 1
+  },
+  {
+   "del": "ST段压低",
+   "add": "左后束支传导阻滞",
+   "n": 1
+  },
+  {
+   "del": "ST段压低",
+   "add": "异常Q波",
+   "n": 1
+  },
+  {
+   "del": "ST段延长",
+   "add": "P波改变",
+   "n": 1
+  },
+  {
+   "del": "ST段延长",
+   "add": "心房颤动",
+   "n": 1
+  },
+  {
+   "del": "ST段延长",
+   "add": "窦性心动过缓",
+   "n": 1
+  },
+  {
+   "del": "ST段延长",
+   "add": "轴向右移",
+   "n": 1
+  },
+  {
+   "del": "ST段延长",
+   "add": "轴向左移",
+   "n": 1
+  },
+  {
+   "del": "T波倒置",
+   "add": "左后束支传导阻滞",
+   "n": 1
+  },
+  {
+   "del": "T波倒置",
+   "add": "异常Q波",
+   "n": 1
+  },
+  {
+   "del": "T波倒置",
+   "add": "房性早搏",
+   "n": 1
+  },
+  {
+   "del": "T波倒置",
+   "add": "轴向右移",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "交接区逸搏",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "异常Q波",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "心房扑动",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "房性心动过速",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "窦性心律",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "窦性心律不齐",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "轴向左移",
+   "n": 1
+  },
+  {
+   "del": "U波",
+   "add": "ST-T改变",
+   "n": 1
+  },
+  {
+   "del": "U波",
+   "add": "窦性心律",
+   "n": 1
+  },
+  {
+   "del": "一度房室传导阻滞",
+   "add": "T波改变",
+   "n": 1
+  },
+  {
+   "del": "一度房室传导阻滞",
+   "add": "心房扑动",
+   "n": 1
+  },
+  {
+   "del": "三度房室传导阻滞",
+   "add": "窦性心律",
+   "n": 1
+  },
+  {
+   "del": "侧壁心肌梗死",
+   "add": "异常Q波",
+   "n": 1
+  },
+  {
+   "del": "侧壁心肌梗死",
+   "add": "窦性心动过缓",
+   "n": 1
+  },
+  {
+   "del": "全导联低电压QRS",
+   "add": "T波改变",
+   "n": 1
+  },
+  {
+   "del": "右心室肥厚",
+   "add": "P波改变",
+   "n": 1
+  },
+  {
+   "del": "右心室肥厚",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "右心房肥厚",
+   "add": "P波改变",
+   "n": 1
+  },
+  {
+   "del": "右心房肥厚",
+   "add": "ST-T改变",
+   "n": 1
+  },
+  {
+   "del": "右心房肥厚",
+   "add": "轴向右移",
+   "n": 1
+  },
+  {
+   "del": "室上性心动过速",
+   "add": "窦性心动过速",
+   "n": 1
+  },
+  {
+   "del": "室内差异传导",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "室内差异传导",
+   "add": "异常Q波",
+   "n": 1
+  },
+  {
+   "del": "室壁早期复极化",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "左后束支传导阻滞",
+   "add": "室性早搏",
+   "n": 1
+  },
+  {
+   "del": "左后束支传导阻滞",
+   "add": "窦性心动过速",
+   "n": 1
+  },
+  {
+   "del": "左后束支传导阻滞",
+   "add": "轴向左移",
+   "n": 1
+  },
+  {
+   "del": "左心室肥厚",
+   "add": "室性早搏",
+   "n": 1
+  },
+  {
+   "del": "左心室肥厚",
+   "add": "轴向右移",
+   "n": 1
+  },
+  {
+   "del": "心房扑动",
+   "add": "左后束支传导阻滞",
+   "n": 1
+  },
+  {
+   "del": "心房扑动",
+   "add": "轴向左移",
+   "n": 1
+  },
+  {
+   "del": "心房颤动",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "房室传导阻滞",
+   "add": "ST-T改变",
+   "n": 1
+  },
+  {
+   "del": "房性心动过速",
+   "add": "心房扑动",
+   "n": 1
+  },
+  {
+   "del": "房性心动过速",
+   "add": "心房颤动",
+   "n": 1
+  },
+  {
+   "del": "房性早搏",
+   "add": "ST-T改变",
+   "n": 1
+  },
+  {
+   "del": "房性早搏",
+   "add": "T波改变",
+   "n": 1
+  },
+  {
+   "del": "房性早搏",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "房性早搏",
+   "add": "心房颤动",
+   "n": 1
+  },
+  {
+   "del": "窦性心动过缓",
+   "add": "T波改变",
+   "n": 1
+  },
+  {
+   "del": "窦性心动过速",
+   "add": "T波改变",
+   "n": 1
+  },
+  {
+   "del": "窦性心动过速",
+   "add": "心房颤动",
+   "n": 1
+  },
+  {
+   "del": "窦性心动过速",
+   "add": "窦性心律",
+   "n": 1
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "T波改变",
+   "n": 1
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "一度房室传导阻滞",
+   "n": 1
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "室内差异传导",
+   "n": 1
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "房性心动过速",
+   "n": 1
+  },
+  {
+   "del": "逆时针旋转",
+   "add": "ST-T改变",
+   "n": 1
+  },
+  {
+   "del": "逆时针旋转",
+   "add": "T波改变",
+   "n": 1
+  },
+  {
+   "del": "逆时针旋转",
+   "add": "异常Q波",
+   "n": 1
+  },
+  {
+   "del": "预激综合征",
+   "add": "T波改变",
+   "n": 1
+  }
+ ],
+ "cooc_top": [
+  {
+   "del": "心房扑动",
+   "add": "心房颤动",
+   "n": 95
+  },
+  {
+   "del": "T波改变",
+   "add": "ST-T改变",
+   "n": 36
+  },
+  {
+   "del": "心房扑动",
+   "add": "ST-T改变",
+   "n": 35
+  },
+  {
+   "del": "T波倒置",
+   "add": "ST-T改变",
+   "n": 26
+  },
+  {
+   "del": "T波倒置",
+   "add": "心房颤动",
+   "n": 21
+  },
+  {
+   "del": "心房扑动",
+   "add": "右束支阻滞",
+   "n": 15
+  },
+  {
+   "del": "ST段压低",
+   "add": "ST-T改变",
+   "n": 12
+  },
+  {
+   "del": "ST段延长",
+   "add": "ST-T改变",
+   "n": 12
+  },
+  {
+   "del": "心房扑动",
+   "add": "T波改变",
+   "n": 12
+  },
+  {
+   "del": "T波改变",
+   "add": "心房颤动",
+   "n": 11
+  },
+  {
+   "del": "ST段压低",
+   "add": "心房颤动",
+   "n": 9
+  },
+  {
+   "del": "左心室肥厚",
+   "add": "ST-T改变",
+   "n": 9
+  },
+  {
+   "del": "心房扑动",
+   "add": "室性早搏",
+   "n": 9
+  },
+  {
+   "del": "QT间期延长",
+   "add": "心房颤动",
+   "n": 7
+  },
+  {
+   "del": "QT间期延长",
+   "add": "ST-T改变",
+   "n": 6
+  },
+  {
+   "del": "全导联低电压QRS",
+   "add": "心房颤动",
+   "n": 6
+  },
+  {
+   "del": "T波改变",
+   "add": "右束支阻滞",
+   "n": 5
+  },
+  {
+   "del": "室壁早期复极化",
+   "add": "ST-T改变",
+   "n": 5
+  },
+  {
+   "del": "左心室肥厚",
+   "add": "心房颤动",
+   "n": 5
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "ST-T改变",
+   "n": 5
+  },
+  {
+   "del": "T波倒置",
+   "add": "P波改变",
+   "n": 4
+  },
+  {
+   "del": "T波倒置",
+   "add": "T波改变",
+   "n": 4
+  },
+  {
+   "del": "T波倒置",
+   "add": "右束支阻滞",
+   "n": 4
+  },
+  {
+   "del": "全导联低电压QRS",
+   "add": "ST-T改变",
+   "n": 4
+  },
+  {
+   "del": "心房扑动",
+   "add": "异常Q波",
+   "n": 4
+  },
+  {
+   "del": "窦性心动过速",
+   "add": "ST-T改变",
+   "n": 4
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "窦性心律",
+   "n": 4
+  },
+  {
+   "del": "QT间期延长",
+   "add": "T波改变",
+   "n": 3
+  },
+  {
+   "del": "ST段压低",
+   "add": "T波改变",
+   "n": 3
+  },
+  {
+   "del": "T波改变",
+   "add": "室性早搏",
+   "n": 3
+  },
+  {
+   "del": "室内差异传导",
+   "add": "T波改变",
+   "n": 3
+  },
+  {
+   "del": "室内差异传导",
+   "add": "心房颤动",
+   "n": 3
+  },
+  {
+   "del": "左后束支传导阻滞",
+   "add": "ST-T改变",
+   "n": 3
+  },
+  {
+   "del": "异常Q波",
+   "add": "ST-T改变",
+   "n": 3
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "房性早搏",
+   "n": 3
+  },
+  {
+   "del": "QT间期延长",
+   "add": "室性早搏",
+   "n": 2
+  },
+  {
+   "del": "ST段压低",
+   "add": "右束支阻滞",
+   "n": 2
+  },
+  {
+   "del": "T波倒置",
+   "add": "交接区逸搏",
+   "n": 2
+  },
+  {
+   "del": "T波倒置",
+   "add": "室性早搏",
+   "n": 2
+  },
+  {
+   "del": "T波改变",
+   "add": "P波改变",
+   "n": 2
+  },
+  {
+   "del": "T波改变",
+   "add": "轴向右移",
+   "n": 2
+  },
+  {
+   "del": "全导联低电压QRS",
+   "add": "右束支阻滞",
+   "n": 2
+  },
+  {
+   "del": "全导联低电压QRS",
+   "add": "异常Q波",
+   "n": 2
+  },
+  {
+   "del": "右心室肥厚",
+   "add": "ST-T改变",
+   "n": 2
+  },
+  {
+   "del": "右心室肥厚",
+   "add": "轴向右移",
+   "n": 2
+  },
+  {
+   "del": "室内差异传导",
+   "add": "ST-T改变",
+   "n": 2
+  },
+  {
+   "del": "左后束支传导阻滞",
+   "add": "心房颤动",
+   "n": 2
+  },
+  {
+   "del": "左心室肥厚",
+   "add": "P波改变",
+   "n": 2
+  },
+  {
+   "del": "异常Q波",
+   "add": "T波改变",
+   "n": 2
+  },
+  {
+   "del": "异常Q波",
+   "add": "右束支阻滞",
+   "n": 2
+  },
+  {
+   "del": "异常Q波",
+   "add": "心房颤动",
+   "n": 2
+  },
+  {
+   "del": "窦性心动过速",
+   "add": "心房扑动",
+   "n": 2
+  },
+  {
+   "del": "QT间期延长",
+   "add": "P波改变",
+   "n": 1
+  },
+  {
+   "del": "QT间期延长",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "QT间期延长",
+   "add": "轴向右移",
+   "n": 1
+  },
+  {
+   "del": "ST段压低",
+   "add": "P波改变",
+   "n": 1
+  },
+  {
+   "del": "ST段压低",
+   "add": "左后束支传导阻滞",
+   "n": 1
+  },
+  {
+   "del": "ST段压低",
+   "add": "异常Q波",
+   "n": 1
+  },
+  {
+   "del": "ST段延长",
+   "add": "P波改变",
+   "n": 1
+  },
+  {
+   "del": "ST段延长",
+   "add": "心房颤动",
+   "n": 1
+  },
+  {
+   "del": "ST段延长",
+   "add": "轴向右移",
+   "n": 1
+  },
+  {
+   "del": "ST段延长",
+   "add": "轴向左移",
+   "n": 1
+  },
+  {
+   "del": "T波倒置",
+   "add": "左后束支传导阻滞",
+   "n": 1
+  },
+  {
+   "del": "T波倒置",
+   "add": "异常Q波",
+   "n": 1
+  },
+  {
+   "del": "T波倒置",
+   "add": "房性早搏",
+   "n": 1
+  },
+  {
+   "del": "T波倒置",
+   "add": "轴向右移",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "交接区逸搏",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "异常Q波",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "心房扑动",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "窦性心律",
+   "n": 1
+  },
+  {
+   "del": "T波改变",
+   "add": "轴向左移",
+   "n": 1
+  },
+  {
+   "del": "全导联低电压QRS",
+   "add": "T波改变",
+   "n": 1
+  },
+  {
+   "del": "右心室肥厚",
+   "add": "P波改变",
+   "n": 1
+  },
+  {
+   "del": "右心室肥厚",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "室内差异传导",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "室内差异传导",
+   "add": "异常Q波",
+   "n": 1
+  },
+  {
+   "del": "室壁早期复极化",
+   "add": "右束支阻滞",
+   "n": 1
+  },
+  {
+   "del": "左后束支传导阻滞",
+   "add": "室性早搏",
+   "n": 1
+  },
+  {
+   "del": "左后束支传导阻滞",
+   "add": "轴向左移",
+   "n": 1
+  },
+  {
+   "del": "左心室肥厚",
+   "add": "室性早搏",
+   "n": 1
+  },
+  {
+   "del": "左心室肥厚",
+   "add": "轴向右移",
+   "n": 1
+  },
+  {
+   "del": "心房扑动",
+   "add": "左后束支传导阻滞",
+   "n": 1
+  },
+  {
+   "del": "心房扑动",
+   "add": "轴向左移",
+   "n": 1
+  },
+  {
+   "del": "窦性心动过速",
+   "add": "T波改变",
+   "n": 1
+  },
+  {
+   "del": "窦性心动过速",
+   "add": "心房颤动",
+   "n": 1
+  },
+  {
+   "del": "窦性心动过速",
+   "add": "窦性心律",
+   "n": 1
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "T波改变",
+   "n": 1
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "一度房室传导阻滞",
+   "n": 1
+  },
+  {
+   "del": "窦性心律不齐",
+   "add": "右束支阻滞",
+   "n": 1
+  }
+ ],
+ "cooc_top15_del": [
+  "心房扑动",
+  "T波倒置",
+  "T波改变",
+  "ST段压低",
+  "QT间期延长",
+  "左心室肥厚",
+  "ST段延长",
+  "窦性心律不齐",
+  "全导联低电压QRS",
+  "室内差异传导",
+  "异常Q波",
+  "窦性心动过速",
+  "左后束支传导阻滞",
+  "右心室肥厚",
+  "室壁早期复极化"
+ ],
+ "cooc_top15_add": [
+  "ST-T改变",
+  "心房颤动",
+  "右束支阻滞",
+  "T波改变",
+  "室性早搏",
+  "P波改变",
+  "异常Q波",
+  "轴向右移",
+  "窦性心律",
+  "心房扑动",
+  "房性早搏",
+  "轴向左移",
+  "交接区逸搏",
+  "左后束支传导阻滞",
+  "一度房室传导阻滞"
+ ]
+};
+
+/* =================== 数学核 =================== */
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function erf(x){if(!isFinite(x))return x<0?-1:1;const s=Math.sign(x);x=Math.abs(x);const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;}
+function pnorm(x){if(x===-Infinity)return 0;if(x===Infinity)return 1;if(!isFinite(x))return NaN;return 0.5*(1+erf(x/Math.SQRT2));}
+function qnorm(p){if(!isFinite(p))return NaN;if(p<=0)return -Infinity;if(p>=1)return Infinity;
+  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,
+  -30.66479806614716,2.506628277459239];const b=[-54.76098798224065,161.5858368580409,-155.6989798598866,
+  66.80131188771972,-13.28068155728857];const c=[-7.784894002430293e-3,-0.3223964580411365,-2.400758277161838,
+  -2.549732539343734,4.374664141464968,2.938163982698783];const d=[7.784695709041462e-3,0.3224671290700398,
+  2.445134137142996,3.754408661907416];const pl=0.02425,ph=1-pl;let q,r;
+  if(p<pl){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  else if(p<=ph){q=p-0.5;r=q*q;return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+  else{q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}}
+function qfp_of(pi,qfn,fdr){if((1-pi)<1e-9)return 0;return fdr*pi*(1-qfn)/((1-pi)*(1-fdr));}
+function auc_b(se,sp){return pnorm((qnorm(se)+qnorm(sp))/Math.SQRT2);}
+function metrics(se,sp,pi){const ppv=se*pi/(se*pi+(1-sp)*(1-pi));const npv=sp*(1-pi)/(sp*(1-pi)+(1-se)*pi);
+  const f1=2*ppv*se/(ppv+se);return {Se:se,Sp:sp,PPV:ppv,NPV:npv,F1:f1,AUC:auc_b(se,sp)};}
+function attenuate(se_app,sp_app,pi,qfn,fdr){const qfp=qfp_of(pi,qfn,fdr);
+  const se_t=se_app*(1-qfn)+(1-sp_app)*qfn;const sp_t=sp_app*(1-qfp)+(1-se_app)*qfp;
+  const pi_a=pi*(1-qfn)+(1-pi)*qfp;const app=metrics(se_app,sp_app,pi_a);const tru=metrics(se_t,sp_t,pi);
+  const att={};['Se','Sp','PPV','NPV','F1','AUC'].forEach(k=>att[k]=app[k]-tru[k]);
+  return {app,tru,att,qfp,se_t,sp_t,se_true:se_t,sp_true:sp_t,pi_a};}
+function rnd(a,b){return a+Math.random()*(b-a);}
+function gauss(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function fmtP(x){if(x==null||!isFinite(x))return '—';return (x*100).toFixed(1)+'%';}
+
+/* =================== 全局状态 =================== */
+const M = DATA.meta;
+const S={c:0.85,se_app:0.85,sp_app:0.85,pi:M.avg_prev,
+  qfn:M.qfn_s,fdr:M.fdr_s,
+  c4:0.85,delta:0.05,fdr4:M.fdr_s,metric4:'Se'};
+
+/* =================== 工具：tooltip / 格式化 =================== */
+const tip=document.getElementById('tooltip');
+function showTip(html,e){tip.innerHTML=html;tip.style.opacity=1;
+  const x=Math.min((e.clientX||0)+14, window.innerWidth-310);
+  const y=Math.min((e.clientY||0)+14, window.innerHeight-160);
+  tip.style.left=x+'px';tip.style.top=y+'px';}
+function hideTip(){tip.style.opacity=0;}
+
+/* =================== 背景粒子（暖琥珀色） =================== */
+const bg=document.getElementById('bg'),bgx=bg.getContext('2d');
+let bparts=[];
+function initBg(){bg.width=innerWidth;bg.height=innerHeight;
+  bparts=Array.from({length:80},()=>({x:Math.random()*bg.width,y:Math.random()*bg.height,
+    vx:rnd(-0.25,0.25),vy:rnd(-0.25,0.25),r:rnd(0.6,2.2)}));}
+function drawBg(){bgx.clearRect(0,0,bg.width,bg.height);
+  const cols=['rgba(255,180,84,0.5)','rgba(255,122,182,0.45)','rgba(95,227,161,0.4)','rgba(126,212,255,0.4)'];
+  for(const p of bparts){p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0||p.x>bg.width)p.vx*=-1;if(p.y<0||p.y>bg.height)p.vy*=-1;
+    bgx.beginPath();bgx.arc(p.x,p.y,p.r,0,7);bgx.fillStyle=cols[Math.floor(Math.random()*cols.length)];bgx.fill();}
+  requestAnimationFrame(drawBg);}
+initBg();drawBg();addEventListener('resize',initBg);
+
+/* =================== TAB 切换 =================== */
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('section.mod').forEach(s=>s.classList.remove('active'));
+  b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');
+  if(b.dataset.tab==='m1'){renderDeriveLab();}
+  if(b.dataset.tab==='m2'){resizeParticle();renderM2lite();renderM3();renderDeriveLab();}
+  if(b.dataset.tab==='m3')renderM4();
+  if(b.dataset.tab==='m5-stat') pdRender();
+  if(b.dataset.tab==='m6') renderSubAll();
+});
+
+/* =================== 模块1 · 渲染 =================== */
+function renderM1tiles(){
+  const t=document.getElementById('m1-tiles');
+  const items=[
+    ['pri',M.n_main,'主分析集 (例)'],['good',fmtP(M.overall_acc),'总体判准率'],
+    ['bad',M.n_inacc,'不准确 (例)'],['acc',fmtP(M.qfn_s),'漏标率 qfn'],
+    ['warn',fmtP(M.fdr_s),'误标率 FDR'],['sky',M.n_units,'诊断单元']];
+  t.innerHTML=items.map(i=>`<div class="tile ${i[0]}"><div class="v">${i[1]}</div><div class="l">${i[2]}</div></div>`).join('');
+}
+let etMode='by';
+function renderErrBars(){
+  const svg=document.getElementById('err-bars');const W=560,H=360;
+  const data=DATA.err_types.slice().sort((a,b)=>b[etMode==='by'?'n_含':'n_纯']-a[etMode==='by'?'n_含':'n_纯']);
+  const defs=data.map(d=>etMode==='by'?d.n_含:d.n_纯);const mx=Math.max(...defs,1);
+  const rowH=30,top=18;let s='';
+  data.forEach((d,i)=>{const y=top+i*rowH;const w=(defs[i]/mx)*(W-180);
+    const col=i===0?'#ff7a7a':'#ffb454';
+    s+=`<g data-t="${encodeURIComponent(d.type)}" data-n="${defs[i]}">
+      <text x="0" y="${y+14}" font-size="11.5" fill="#f5efdc">${d.type.replace('类型','').slice(0,16)}</text>
+      <rect x="150" y="${y+2}" width="${Math.max(w,1)}" height="16" rx="5" fill="${col}" opacity="0.85"/>
+      <text x="${152+Math.max(w,1)+6}" y="${y+15}" font-size="12" fill="#f5efdc" font-family="monospace">${defs[i]}</text></g>`;});
+  svg.innerHTML=s;
+  svg.querySelectorAll('g[data-t]').forEach(g=>g.onmousemove=e=>showTip(
+    `<b>${decodeURIComponent(g.dataset.t)}</b><br>计数：${g.dataset.n} 条`,e));
+  svg.querySelectorAll('g[data-t]').forEach(g=>g.onmouseleave=hideTip);
+  document.getElementById('et-note').innerHTML=
+    `主导错误为 <b>类型01 核心心律失常诊断错误或缺失</b>（含 ${DATA.err_types[0].n_含} 条 / 纯 ${DATA.err_types[0].n_纯} 条），印证衰减分析的核心结论。`;
+}
+function renderScatter(){
+  const svg=document.getElementById('dx-scatter');const W=560,H=360;
+  const px=55,py=30,bw=W-px-18,bh=H-py-40;
+  const dx=DATA.per_dx.filter(d=>d.qfn_dx!=null&&d.fdr_dx!=null);
+  const X=v=>px+(clamp(v,0,0.9)/0.9)*bw, Y=v=>py+bh-(clamp(v,0,0.9)/0.9)*bh;
+  let s=`<line x1="${px}" y1="${py+bh}" x2="${px+bw}" y2="${py+bh}" stroke="#3a4a6a"/>`;
+  s+=`<line x1="${px}" y1="${py}" x2="${px}" y2="${py+bh}" stroke="#3a4a6a"/>`;
+  for(let i=0;i<=9;i++){const gx=px+bw*i/9;s+=`<line x1="${gx}" y1="${py}" x2="${gx}" y2="${py+bh}" stroke="#1c2740"/>`;
+    s+=`<text x="${gx}" y="${py+bh+16}" font-size="9.5" fill="#aea796" text-anchor="middle">${(i*10)}%</text>`;}
+  for(let i=0;i<=9;i++){const gy=py+bh-i*bh/9;s+=`<line x1="${px}" y1="${gy}" x2="${px+bw}" y2="${gy}" stroke="#1c2740"/>`;
+    s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="#aea796" text-anchor="end">${(i*10)}%</text>`;}
+  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="#aea796" text-anchor="middle">漏标率 qfn（越右越漏）</text>`;
+  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="#aea796" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">误标率 FDR（越上越乱）</text>`;
+  dx.forEach(d=>{const cx=X(d.qfn_dx),cy=Y(d.fdr_dx);const r=4+Math.sqrt(d.burden)/3.2;
+    const col=d.sev===5?'#ff7a7a':d.sev===3?'#ffd166':'#ffb454';
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}" opacity="0.62" stroke="${col}" stroke-width="1"
+      data-u="${encodeURIComponent(d.unit)}" data-q="${fmtP(d.qfn_dx)}" data-f="${fmtP(d.fdr_dx)}" data-b="${d.burden}" data-sev="${d.sev}"/>`;});
+  svg.innerHTML=s;
+  svg.querySelectorAll('circle').forEach(c=>c.onmousemove=e=>showTip(
+    `<b>${decodeURIComponent(c.dataset.u)}</b><br>临床重要性：${c.dataset.sev} 分<br>漏标率：${c.dataset.q}<br>误标率：${c.dataset.f}<br>临床负担：${c.dataset.b}`,e));
+  svg.querySelectorAll('circle').forEach(c=>c.onmouseleave=hideTip);
+}
+let dxSort='burden';
+function renderDxTable(){
+  const svg=document.getElementById('dx-table');const W=1100,H=1080;
+  const all=DATA.per_dx.slice();
+  if(dxSort==='burden') all.sort((a,b)=>b.burden-a.burden);
+  else if(dxSort==='qfn') all.sort((a,b)=>(b.qfn_dx||-1)-(a.qfn_dx||-1));
+  else if(dxSort==='fdr') all.sort((a,b)=>(b.fdr_dx||-1)-(a.fdr_dx||-1));
+  const rowH=(H-32)/all.length;let s='';
+  const cols=[['诊断标签',14,200],['漏标率 qfn',330,250],['误标率 FDR',620,250],['临床负担',920,140]];
+  cols.forEach(c=>s+=`<text x="${c[1]}" y="18" font-size="12" fill="#aea796">${c[0]}</text>`);
+  s+=`<line x1="10" y1="24" x2="${W-10}" y2="24" stroke="#3a4a6a"/>`;
+  all.forEach((d,i)=>{const y=30+i*rowH;const qfnV=d.qfn_dx==null?null:d.qfn_dx;const fdrV=d.fdr_dx==null?null:d.fdr_dx;
+    const qw=qfnV==null?0:(clamp(qfnV,0,0.95)/0.95)*230;
+    const fw=fdrV==null?0:(clamp(fdrV,0,0.95)/0.95)*230;
+    const col=d.sev===5?'#ff7a7a':d.sev===3?'#ffd166':'#ffb454';
+    s+=`<text x="14" y="${y+rowH/2+4}" font-size="11.5" fill="#f5efdc">${d.unit}</text>`;
+    s+=`<rect x="330" y="${y+rowH/2-6}" width="230" height="12" rx="4" fill="#1c2740"/>`;
+    if(qfnV!=null) s+=`<rect x="330" y="${y+rowH/2-6}" width="${qw}" height="12" rx="4" fill="${col}" opacity="0.85"/>`;
+    s+=`<text x="568" y="${y+rowH/2+4}" font-size="10.5" fill="#f5efdc" font-family="monospace">${qfnV==null?'—':fmtP(qfnV)}</text>`;
+    s+=`<rect x="620" y="${y+rowH/2-6}" width="230" height="12" rx="4" fill="#1c2740"/>`;
+    if(fdrV!=null) s+=`<rect x="620" y="${y+rowH/2-6}" width="${fw}" height="12" rx="4" fill="${col}" opacity="0.6"/>`;
+    s+=`<text x="858" y="${y+rowH/2+4}" font-size="10.5" fill="#f5efdc" font-family="monospace">${fdrV==null?'—':fmtP(fdrV)}</text>`;
+    s+=`<text x="920" y="${y+rowH/2+4}" font-size="11" fill="#aea796" font-family="monospace">${d.burden.toFixed(1)}</text>`;});
+  svg.innerHTML=s;
+}
+function renderOov(){
+  const svg=document.getElementById('oov-bars');const W=1100,H=560;
+  const data=DATA.oov;const mx=Math.max(...data.map(d=>d.n));
+  const rowH=Math.min(20,(H-32)/data.length);let s='';
+  s+=`<text x="14" y="16" font-size="11.5" fill="#aea796">OOV 词汇</text>`;
+  s+=`<text x="780" y="16" font-size="11.5" fill="#aea796">出现行数</text>`;
+  s+=`<line x1="10" y1="22" x2="${W-10}" y2="22" stroke="#3a4a6a"/>`;
+  data.forEach((d,i)=>{const y=28+i*rowH;const w=(d.n/mx)*(W-200);
+    const col=d.n>=20?'#ff7a7a':d.n>=10?'#ffd166':'#ffb454';
+    s+=`<text x="14" y="${y+rowH/2+4}" font-size="11.5" fill="#f5efdc">${d.term}</text>`;
+    s+=`<rect x="180" y="${y+2}" width="${Math.max(w,2)}" height="${rowH-6}" rx="4" fill="${col}" opacity="0.85"/>`;
+    s+=`<text x="${182+Math.max(w,2)+6}" y="${y+rowH/2+4}" font-size="11" fill="#f5efdc" font-family="monospace">${d.n}</text>`;});
+  svg.innerHTML=s;
+  const totRows=data.reduce((a,b)=>a+b.n,0);
+  document.getElementById('oov-note').innerHTML=
+    `共 <b>${data.length}</b> 个 OOV 词汇、<b>${totRows}</b> 行纠正短语。最高频为 <b>左心室高电压（${data[0].n} 行）</b>、<b>胸导联R波上升不良（${data[1].n} 行）</b>。这些是数据库词汇表的<b style="color:var(--bad)">设计缺口</b>：任何涉及左心室高电压、起搏器判断、PtfV1 增大或部位特异低电压的模型，用这个数据库都<b>无法学到</b>。`;
+}
+function renderCoocHeat(){
+  const svg=document.getElementById('cooc-heat');const W=1100,H=480;
+  const dels=DATA.cooc_top15_del, adds=DATA.cooc_top15_add;
+  const map=new Map();DATA.cooc_top.forEach(c=>map.set(c.del+'|'+c.add,c.n));
+  const mx=Math.max(...DATA.cooc_top.map(c=>c.n));
+  const pl=180,pr=20,pt=20,pb=20;const cw=(W-pl-pr)/adds.length,ch=(H-pt-pb)/dels.length;
+  let s='';
+  // 轴标签
+  adds.forEach((a,j)=>{const x=pl+j*cw+cw/2;s+=`<text x="${x}" y="${H-4}" font-size="10" fill="#aea796" text-anchor="middle" transform="rotate(-30 ${x} ${H-4})">${a}</text>`;});
+  dels.forEach((d,i)=>{const y=pt+i*ch+ch/2+3;s+=`<text x="${pl-6}" y="${y}" font-size="10.5" fill="#aea796" text-anchor="end">${d}</text>`;});
+  // 格子
+  for(let i=0;i<dels.length;i++) for(let j=0;j<adds.length;j++){
+    const n=map.get(dels[i]+'|'+adds[j])||0;
+    if(n===0) continue;
+    const t=n/mx;
+    // 暖色系：低=pri(琥珀) 中=warn(向日葵) 高=bad(珊瑚红)
+    const col=t>0.5?'rgba(255,122,122,'+(0.55+t*0.4)+')':t>0.2?'rgba(255,209,102,'+(0.55+t*0.4)+')':'rgba(255,180,84,'+(0.5+t*0.45)+')';
+    const x=pl+j*cw+1,y=pt+i*ch+1;
+    s+=`<rect x="${x}" y="${y}" width="${cw-2}" height="${ch-2}" rx="3" fill="${col}" stroke="rgba(28,31,42,0.6)" stroke-width="0.5"
+      data-d="${encodeURIComponent(dels[i])}" data-a="${encodeURIComponent(adds[j])}" data-n="${n}"/>`;
+    if(n>=8) s+=`<text x="${x+cw/2}" y="${y+ch/2+3.5}" font-size="9.5" fill="#1c1f2a" font-family="monospace" text-anchor="middle" font-weight="700">${n}</text>`;
+  }
+  s+=`<text x="14" y="14" font-size="11" fill="#aea796">纵轴 = 数据库被删标签（前 15 位） · 横轴 = 专家新增标签（前 15 位） · 颜色=共现次数</text>`;
+  svg.innerHTML=s;
+  svg.querySelectorAll('rect[data-n]').forEach(r=>r.onmousemove=e=>showTip(
+    `<b>${decodeURIComponent(r.dataset.d)}</b> → <b>${decodeURIComponent(r.dataset.a)}</b><br>共现 <b style="color:var(--bad)">${r.dataset.n}</b> 次`,e));
+  svg.querySelectorAll('rect[data-n]').forEach(r=>r.onmouseleave=hideTip);
+}
+
+/* =================== 互动推导实验室 =================== */
+const DL_N = 10000;  // 用于列联表可视化的样本量
+function fmtN(x){return Math.round(x).toLocaleString();}
+function fmtX(x){return x==null||!isFinite(x)?'—':x.toFixed(3);}
+function renderDeriveLab(){
+  const a = attenuate(S.se_app, S.sp_app, S.pi, S.qfn, S.fdr);
+  // 同步输入层显示
+  const setText=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setText('dl-v-seapp', S.se_app.toFixed(2));
+  setText('dl-v-spapp', S.sp_app.toFixed(2));
+  setText('dl-v-pi', fmtP(S.pi));
+  setText('dl-v-qfn', fmtP(S.qfn));
+  setText('dl-v-fdr', fmtP(S.fdr));
+  // 公式链
+  const qfp = qfp_of(S.pi, S.qfn, S.fdr);
+  const F = document.getElementById('dl-formulas');
+  F.innerHTML = `
+    <div><b style="color:var(--pri)">qfp</b> = fdr·π·(1−qfn) / ((1−π)(1−fdr))
+      = <b style="color:var(--warn)">${qfp.toFixed(4)}</b></div>
+    <div><b style="color:var(--pri)">Se<sub>真</sub></b> = Se<sub>app</sub>(1−qfn) + (1−Sp<sub>app</sub>)qfn
+      = ${S.se_app.toFixed(2)}×${(1-S.qfn).toFixed(2)} + ${(1-S.sp_app).toFixed(2)}×${S.qfn.toFixed(2)}
+      = <b style="color:var(--good)">${a.se_t.toFixed(3)}</b></div>
+    <div><b style="color:var(--pri)">Sp<sub>真</sub></b> = Sp<sub>app</sub>(1−qfp) + (1−Se<sub>app</sub>)qfp
+      = ${S.sp_app.toFixed(2)}×${(1-qfp).toFixed(2)} + ${(1-S.se_app).toFixed(2)}×${qfp.toFixed(2)}
+      = <b style="color:var(--good)">${a.sp_t.toFixed(3)}</b></div>
+    <div><b style="color:var(--pri)">PPV<sub>真</sub></b> = Se<sub>真</sub>·π / (Se<sub>真</sub>·π + (1−Sp<sub>真</sub>)·(1−π))
+      = <b style="color:var(--good)">${a.tru.PPV.toFixed(3)}</b></div>
+    <div><b style="color:var(--pri)">NPV<sub>真</sub></b> = Sp<sub>真</sub>·(1−π) / (Sp<sub>真</sub>·(1−π) + (1−Se<sub>真</sub>)·π)
+      = <b style="color:var(--good)">${a.tru.NPV.toFixed(3)}</b></div>
+    <div><b style="color:var(--pri)">F1<sub>真</sub></b> = 2·PPV<sub>真</sub>·Se<sub>真</sub> / (PPV<sub>真</sub>+Se<sub>真</sub>)
+      = <b style="color:var(--good)">${a.tru.F1.toFixed(3)}</b></div>
+    <div><b style="color:var(--pri)">AUC<sub>真</sub></b> = Φ((Φ⁻¹(Se<sub>真</sub>)+Φ⁻¹(Sp<sub>真</sub>))/√2)
+      = <b style="color:var(--good)">${a.tru.AUC.toFixed(3)}</b></div>`;
+  // 输出层
+  const O = document.getElementById('dl-outputs');
+  O.innerHTML = `
+    <div>Se<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.Se.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.Se.toFixed(3)}</span></div>
+    <div>Sp<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.Sp.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.Sp.toFixed(3)}</span></div>
+    <div>PPV<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.PPV.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.PPV.toFixed(3)}</span></div>
+    <div>NPV<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.NPV.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.NPV.toFixed(3)}</span></div>
+    <div>F1<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.F1.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.F1.toFixed(3)}</span></div>
+    <div>AUC<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.AUC.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.AUC.toFixed(3)}</span></div>`;
+  // 2x2 计数
+  const Npos = S.pi * DL_N, Nneg = (1-S.pi) * DL_N;
+  const TP_a = S.se_app * Npos, FN_a = (1-S.se_app) * Npos;
+  const FP_a = (1-S.sp_app) * Nneg, TN_a = S.sp_app * Nneg;
+  const TP_t = a.se_t * Npos, FN_t = (1-a.se_t) * Npos;
+  const FP_t = (1-a.sp_t) * Nneg, TN_t = a.sp_t * Nneg;
+  const tb = document.getElementById('dl-twobytwo');
+  const cell=(v,hi)=>hi?'#5fe3a1':'#ff5757';
+  const tab=(title, col, TP, FP, FN, TN, Se, Sp)=>`
+    <div>
+      <div style="text-align:center;font-weight:700;color:var(--sky);font-size:13px;margin-bottom:6px;">${title}</div>
+      <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;">
+        <tr><th></th><th style="background:#0c1a2e;color:#4cc7ff;padding:6px;border:1px solid #1f2c45;">${col}阳性 (Y)</th><th style="background:#0c1a2e;color:#4cc7ff;padding:6px;border:1px solid #1f2c45;">${col}阴性 (N)</th><th style="background:#0c1a2e;color:#ffb454;padding:6px;border:1px solid #1f2c45;">合计</th></tr>
+        <tr><th style="background:#0c1a2e;color:#ff7ab6;padding:6px;border:1px solid #1f2c45;">预测 1</th>
+          <td style="padding:8px;border:1px solid #1f2c45;text-align:center;background:rgba(95,227,161,0.18);color:#a8f0c8;font-weight:700;">TP=${fmtN(TP)}</td>
+          <td style="padding:8px;border:1px solid #1f2c45;text-align:center;background:rgba(255,87,87,0.18);color:#ffb0b0;font-weight:700;">FP=${fmtN(FP)}</td>
+          <td style="padding:6px;border:1px solid #1f2c45;text-align:center;color:#c2b89c;">${fmtN(TP+FP)}</td></tr>
+        <tr><th style="background:#0c1a2e;color:#ff7ab6;padding:6px;border:1px solid #1f2c45;">预测 0</th>
+          <td style="padding:8px;border:1px solid #1f2c45;text-align:center;background:rgba(255,87,87,0.18);color:#ffb0b0;font-weight:700;">FN=${fmtN(FN)}</td>
+          <td style="padding:8px;border:1px solid #1f2c45;text-align:center;background:rgba(95,227,161,0.18);color:#a8f0c8;font-weight:700;">TN=${fmtN(TN)}</td>
+          <td style="padding:6px;border:1px solid #1f2c45;text-align:center;color:#c2b89c;">${fmtN(FN+TN)}</td></tr>
+        <tr><th style="background:#0c1a2e;color:#ffb454;padding:6px;border:1px solid #1f2c45;">合计</th>
+          <td style="padding:6px;border:1px solid #1f2c45;text-align:center;color:#c2b89c;">${fmtN(TP+FN)}</td>
+          <td style="padding:6px;border:1px solid #1f2c45;text-align:center;color:#c2b89c;">${fmtN(FP+TN)}</td>
+          <td style="padding:6px;border:1px solid #1f2c45;text-align:center;color:#f5efdc;">${fmtN(DL_N)}</td></tr>
+        <tr><td colspan="4" style="padding:6px;color:#c2b89c;border-top:1px dashed rgba(76,199,255,0.4);">Se = TP/(TP+FN) = <b style="color:#a8f0c8">${Se.toFixed(3)}</b>　Sp = TN/(TN+FP) = <b style="color:#a8f0c8">${Sp.toFixed(3)}</b></td></tr>
+      </table></div>`;
+  tb.innerHTML = tab('账面（按假金标准 = DB 标签）','假金标准', TP_a, FP_a, FN_a, TN_a, S.se_app, S.sp_app)
+    + tab('真金标准（按专家最终判定）','真金标准', TP_t, FP_t, FN_t, TN_t, a.se_t, a.sp_t);
+  // 公式：所有 6 个指标 + 定义
+  document.getElementById('dl-metric-table').innerHTML = `
+    <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:8px;font-size:11.5px;">
+      <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
+        <b style="color:#5fe3a1">Se（灵敏度）</b> = TP/(TP+FN) = 真实阳性中被正确预测的比例
+      </div>
+      <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
+        <b style="color:#5fe3a1">Sp（特异度）</b> = TN/(TN+FP) = 真实阴性中被正确预测的比例
+      </div>
+      <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
+        <b style="color:#5fe3a1">PPV（阳性预测值）</b> = TP/(TP+FP) = 预测阳性中真阳性的比例
+      </div>
+      <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
+        <b style="color:#5fe3a1">NPV（阴性预测值）</b> = TN/(TN+FN) = 预测阴性中真阴性的比例
+      </div>
+      <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
+        <b style="color:#5fe3a1">F1</b> = 2·PPV·Se / (PPV+Se) = 精确率与召回率的调和均值
+      </div>
+      <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
+        <b style="color:#5fe3a1">AUC</b> = Φ((Φ⁻¹(Se)+Φ⁻¹(Sp))/√2) = 双正态模型下 ROC 曲线下面积
+      </div>
+    </div>`;
+  // 三层状态图
+  const sv = document.getElementById('dl-three-layer');
+  const W=1100,H=260;
+  // 三层：左=假金标准(暖琥珀) | 中=模型(玫瑰) | 右=真金标准(薄荷)
+  // 假金标准：Y(pos)/N(neg) 各 1 个圆；模型预测 1/0 各 1 个圆；真金标准 Y/N 各 1 个圆
+  const drawBox=(cx,cy,w,h,label,sub,col,count)=>{
+    return `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="10" fill="rgba(56,62,80,0.6)" stroke="${col}" stroke-width="2"/>
+      <text x="${cx}" y="${cy-12}" text-anchor="middle" font-size="13" font-weight="700" fill="${col}">${label}</text>
+      <text x="${cx}" y="${cy+8}" text-anchor="middle" font-size="11" fill="#c2b89c">${sub}</text>
+      <text x="${cx}" y="${cy+30}" text-anchor="middle" font-size="14" font-family="monospace" font-weight="700" fill="${col}">${count}</text>`;
+  };
+  const drawCell=(cx,cy,w,h,label,count,col,sub)=>{
+    return `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="6" fill="${col}" opacity="0.18" stroke="${col}" stroke-width="1.5"/>
+      <text x="${cx}" y="${cy-3}" text-anchor="middle" font-size="11" font-weight="700" fill="${col}">${label}</text>
+      <text x="${cx}" y="${cy+13}" text-anchor="middle" font-size="11" font-family="monospace" fill="#f5efdc">${count}</text>
+      ${sub?`<text x="${cx}" y="${cy+27}" text-anchor="middle" font-size="9" fill="#c2b89c">${sub}</text>`:''}`;
+  };
+  // 列：3 列；每列两行（Y/N），中间层是模型预测 (1/0)
+  // 假金标准分布：Y_strict(1-qfn)×Npos, N_strict = qfn×Npos + (1-fdr)×Nneg (误阴=被漏掉的真阳 + 正确标记的真阴)
+  // 实际 DB 标签：Npos_db = (1-qfn)×Npos + fdr×Nneg (真阳被保留 + 真阴被错标)
+  // ... 为简化展示，按 qfn=0.32, fdr=0.32 时各组样本数
+  const db_pos_count = (1-S.qfn)*Npos + S.fdr*Nneg;
+  const db_neg_count = S.qfn*Npos + (1-S.fdr)*Nneg;
+  // 模型预测=1： TP_app + FP_app
+  const pred_pos_count = TP_a + FP_a;
+  const pred_neg_count = FN_a + TN_a;
+  // 真金标准：Y=Npos, N=Nneg
+  // 重新整理 2x2：
+  // 假金标准 Y 中：模型 1 预测=TP_a; 模型 0=FN_a (漏报)
+  // 假金标准 N 中：模型 1=FP_a; 模型 0=TN_a
+  // 真金标准 Y 中：模型 1=TP_t; 模型 0=FN_t
+  // 真金标准 N 中：模型 1=FP_t; 模型 0=TN_t
+  let s='';
+  // 标题
+  s+=`<text x="180" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#ffb454">假金标准（DB 原始标签）</text>`;
+  s+=`<text x="550" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#ff7ab6">模型预测</text>`;
+  s+=`<text x="920" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#5fe3a1">真金标准（专家判定）</text>`;
+  // 第一行：Y / 预测=1 / Y
+  s+=drawCell(100,55,140,40,'DB 标签=阳 (Y)',fmtN(db_pos_count),'#ffb454',`=真阳×${(1-S.qfn).toFixed(2)} + 假阳${S.fdr.toFixed(2)}`);
+  s+=`<line x1="170" y1="55" x2="450" y2="55" stroke="#ff7ab6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>`;
+  s+=drawCell(550,55,140,40,'预测=1 (阳)',fmtN(pred_pos_count),'#ff7ab6',`=TP_a + FP_a`);
+  s+=`<line x1="620" y1="55" x2="820" y2="55" stroke="#5fe3a1" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr2)"/>`;
+  s+=drawCell(920,55,140,40,'专家=阳 (Y)',fmtN(Npos),'#5fe3a1',`真实阳性`);
+  // 内部细分：假金标准 Y 行内，TP_a vs FN_a
+  s+=drawCell(40,100,75,32,'TP_a',fmtN(TP_a),'#ffb454','');
+  s+=`<text x="78" y="105" text-anchor="middle" font-size="10" fill="#c2b89c">∪</text>`;
+  s+=drawCell(120,100,75,32,'FN_a',fmtN(FN_a),'#ff5757','');
+  s+=`<line x1="40" y1="115" x2="120" y2="115" stroke="#ffb454" stroke-width="0.5"/>`;
+  s+=`<text x="80" y="135" text-anchor="middle" font-size="9" fill="#7c7563">Se_app=${S.se_app.toFixed(2)}</text>`;
+  // 中间：TP_a, FP_a, FN_a, TN_a
+  s+=drawCell(490,100,75,32,'TP_a',fmtN(TP_a),'#ffb454','');
+  s+=drawCell(610,100,75,32,'FP_a',fmtN(FP_a),'#ff5757','');
+  s+=`<line x1="490" y1="115" x2="610" y2="115" stroke="#ff7ab6" stroke-width="0.5"/>`;
+  // 右：TP_t, FN_t
+  s+=drawCell(900,100,75,32,'TP_t',fmtN(TP_t),'#5fe3a1','');
+  s+=drawCell(980,100,75,32,'FN_t',fmtN(FN_t),'#ff5757','');
+  s+=`<line x1="900" y1="115" x2="980" y2="115" stroke="#5fe3a1" stroke-width="0.5"/>`;
+  s+=`<text x="940" y="135" text-anchor="middle" font-size="9" fill="#7c7563">Se_真=${a.se_t.toFixed(2)}</text>`;
+  // 第二行：N / 预测=0 / N
+  s+=`<line x1="170" y1="195" x2="450" y2="195" stroke="#ff7ab6" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  s+=drawCell(100,195,140,40,'DB 标签=阴 (N)',fmtN(db_neg_count),'#ffb454',`=真阴×${(1-S.fdr).toFixed(2)} + 漏报${S.qfn.toFixed(2)}`);
+  s+=drawCell(550,195,140,40,'预测=0 (阴)',fmtN(pred_neg_count),'#ff7ab6',`=FN_a + TN_a`);
+  s+=`<line x1="620" y1="195" x2="820" y2="195" stroke="#5fe3a1" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  s+=drawCell(920,195,140,40,'专家=阴 (N)',fmtN(Nneg),'#5fe3a1',`真实阴性`);
+  s+=drawCell(40,240,75,32,'TN_a',fmtN(TN_a),'#5fe3a1','');
+  s+=drawCell(120,240,75,32,'FP_a',fmtN(FP_a),'#ff5757','');
+  s+=`<line x1="40" y1="255" x2="120" y2="255" stroke="#ffb454" stroke-width="0.5"/>`;
+  s+=`<text x="80" y="252" text-anchor="middle" font-size="9" fill="#7c7563" dy="-2">Sp_app=${S.sp_app.toFixed(2)}</text>`;
+  s+=drawCell(490,240,75,32,'FN_a',fmtN(FN_a),'#ff5757','');
+  s+=drawCell(610,240,75,32,'TN_a',fmtN(TN_a),'#5fe3a1','');
+  s+=`<line x1="490" y1="255" x2="610" y2="255" stroke="#ff7ab6" stroke-width="0.5"/>`;
+  s+=drawCell(900,240,75,32,'FP_t',fmtN(FP_t),'#ff5757','');
+  s+=drawCell(980,240,75,32,'TN_t',fmtN(TN_t),'#5fe3a1','');
+  s+=`<line x1="900" y1="255" x2="980" y2="255" stroke="#5fe3a1" stroke-width="0.5"/>`;
+  s+=`<text x="940" y="252" text-anchor="middle" font-size="9" fill="#7c7563" dy="-2">Sp_真=${a.sp_t.toFixed(2)}</text>`;
+  // 箭头定义
+  s+=`<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff7ab6"/></marker>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5fe3a1"/></marker></defs>`;
+  sv.innerHTML = s;
+  // 同步输入层滑块
+  const sync=(id,v)=>{const e=document.getElementById(id);if(e&&document.activeElement!==e)e.value=v;};
+  sync('dl-s-seapp', S.se_app);
+  sync('dl-s-spapp', S.sp_app);
+  sync('dl-s-pi', S.pi);
+  sync('dl-s-qfn', S.qfn);
+  sync('dl-s-fdr', S.fdr);
+}
+// 推导实验室滑块：双向同步全局 S
+function dlBind(id,key,fmtFn){
+  const el=document.getElementById(id);
+  el.oninput=()=>{S[key]=parseFloat(el.value);
+    // 同步模块二的滑块
+    if(key==='se_app'){document.getElementById('s-se').value=S[key];document.getElementById('v-se').textContent=S[key].toFixed(2);}
+    if(key==='sp_app'){document.getElementById('s-sp').value=S[key];document.getElementById('v-sp').textContent=S[key].toFixed(2);}
+    if(key==='pi'){document.getElementById('s-pi').value=S[key];document.getElementById('v-pi').textContent=fmtP(S[key]);}
+    if(key==='qfn'){document.getElementById('s-qfn').value=S[key];document.getElementById('v-qfn').textContent=fmtP(S[key]);}
+    if(key==='fdr'){document.getElementById('s-fdr').value=S[key];document.getElementById('v-fdr').textContent=fmtP(S[key]);}
+    renderDeriveLab();renderM2lite();renderM3();};
+}
+dlBind('dl-s-seapp','se_app');dlBind('dl-s-spapp','sp_app');
+dlBind('dl-s-pi','pi');dlBind('dl-s-qfn','qfn');dlBind('dl-s-fdr','fdr');
+// 从模块二三同步按钮
+document.getElementById('dl-sync-from-m2').onclick=()=>{renderDeriveLab();};
+document.getElementById('dl-sync-from-m3').onclick=()=>{renderDeriveLab();};
+
+document.getElementById('et-by').onclick=()=>{etMode='by';document.getElementById('et-by').classList.add('on');
+  document.getElementById('et-pure').classList.remove('on');renderErrBars();};
+document.getElementById('et-pure').onclick=()=>{etMode='pure';document.getElementById('et-pure').classList.add('on');
+  document.getElementById('et-by').classList.remove('on');renderErrBars();};
+['burden','qfn','fdr'].forEach(k=>{
+  document.getElementById('sort-'+k).onclick=()=>{
+    dxSort=k;
+    ['burden','qfn','fdr'].forEach(x=>document.getElementById('sort-'+x).classList.toggle('on',x===k));
+    renderDxTable();
+  };
+});
+
+/* =================== 沙盘（合并 M2 + M3） =================== */
+function bindSlider(id,key,disp,fmt){const el=document.getElementById(id);
+  el.oninput=()=>{S[key]=parseFloat(el.value);document.getElementById(disp).textContent=fmt(S[key]);
+    if(key==='c'){S.se_app=S.c;S.sp_app=S.c;
+      document.getElementById('s-se').value=S.c;document.getElementById('s-sp').value=S.c;
+      document.getElementById('v-se').textContent=fmt(S.c);document.getElementById('v-sp').textContent=fmt(S.c);}
+    renderM2lite();renderM3();renderDeriveLab();};}
+bindSlider('s-c','c','v-c',x=>x.toFixed(2));
+bindSlider('s-se','se_app','v-se',x=>x.toFixed(2));
+bindSlider('s-sp','sp_app','v-sp',x=>x.toFixed(2));
+bindSlider('s-pi','pi','v-pi',x=>fmtP(x));
+document.getElementById('m2-preset').onclick=()=>{S.c=0.97;S.se_app=0.97;S.sp_app=0.97;S.pi=0.047;
+  ['s-c','s-se','s-sp'].forEach(i=>document.getElementById(i).value=0.97);
+  document.getElementById('s-pi').value=0.047;
+  ['v-c','v-se','v-sp'].forEach(i=>document.getElementById(i).textContent='0.97');
+  document.getElementById('v-pi').textContent='4.7%';renderM2lite();renderM3();renderDeriveLab();};
+document.getElementById('m2-reset').onclick=()=>{S.c=0.85;S.se_app=0.85;S.sp_app=0.85;S.pi=M.avg_prev;
+  ['s-c','s-se','s-sp'].forEach(i=>document.getElementById(i).value=0.85);
+  document.getElementById('s-pi').value=M.avg_prev;
+  ['v-c','v-se','v-sp'].forEach(i=>document.getElementById(i).textContent='0.85');
+  document.getElementById('v-pi').textContent=fmtP(M.avg_prev);renderM2lite();renderM3();renderDeriveLab();};
+
+function renderM2lite(){
+  // 账面指标紧凑 KPI 条
+  const m=metrics(S.se_app,S.sp_app,S.pi);
+  const order=['AUC','Se','Sp','PPV','NPV','F1'];
+  const palette={AUC:'pri',Se:'acc',Sp:'good',PPV:'warn',NPV:'sky',F1:'grape'};
+  const kpi=document.getElementById('m2-kpi');
+  kpi.innerHTML=order.map(k=>`<div class="tile ${palette[k]}"><div class="v" style="font-size:18px">${m[k].toFixed(2)}</div><div class="l">${k} 账面</div></div>`).join('');
+  let tier=S.c>=0.95?'顶尖':S.c>=0.85?'优秀':S.c>=0.7?'良好':'勉强';
+  document.getElementById('m2-note').innerHTML=
+    `当前模型潜力档位：<b>${tier}（c=${S.c.toFixed(2)}）</b>。右侧柱状为<b style="color:var(--acc)">账面（按假金标准）</b> vs <b style="color:var(--good)">真金标准</b>，衰减 = 账面 − 真金标准。`;
+  renderRadar();
+}
+
+/* ====== 组合式雷达图（账面 vs 真金标准 vs 衰减幅度） ====== */
+function renderRadar(){
+  const svg=document.getElementById('radar');if(!svg)return;
+  const a=attenuate(S.se_app,S.sp_app,S.pi,S.qfn,S.fdr);
+  const axes=['Se','Sp','PPV','NPV','F1','AUC'];
+  const W=820,H=380,cx=410,cy=185,R=140,labR=R+24;
+  const ang=axes.map((_,i)=> -Math.PI/2 + i*2*Math.PI/axes.length);
+  const pt=(v,i)=>{const r=clamp(v,0,1)*R;return [cx+r*Math.cos(ang[i]),cy+r*Math.sin(ang[i])];};
+  const poly=v=>v.map((x,i)=>pt(x,i)).map(p=>p.join(',')).join(' ');
+  const appPoly=poly(axes.map(k=>a.app[k]));
+  const truPoly=poly(axes.map(k=>a.tru[k]));
+  const attPoly=poly(axes.map(k=>a.att[k]));
+  let s=`<defs>
+    <radialGradient id="rg-app" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="#ff7ab6" stop-opacity="0.55"/><stop offset="100%" stop-color="#ff7ab6" stop-opacity="0.20"/></radialGradient>
+    <radialGradient id="rg-tru" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="#5fe3a1" stop-opacity="0.55"/><stop offset="100%" stop-color="#5fe3a1" stop-opacity="0.18"/></radialGradient>
+  </defs>`;
+  // concentric grid rings (0.25/0.5/0.75/1.0)
+  for(let g=1;g<=4;g++){const rr=g*R/4;s+=`<circle cx="${cx}" cy="${cy}" r="${rr}" fill="none" stroke="#3a4a6a" stroke-dasharray="${g===4?'none':'2,4'}" opacity="${g===4?0.7:0.4}"/>`;}
+  // spokes
+  ang.forEach((th,i)=>{s+=`<line x1="${cx}" y1="${cy}" x2="${cx+R*Math.cos(th)}" y2="${cy+R*Math.sin(th)}" stroke="#3a4a6a" opacity="0.5"/>`;});
+  // 账面（玫瑰红填充）
+  s+=`<polygon points="${appPoly}" fill="url(#rg-app)" stroke="#ff7ab6" stroke-width="2" stroke-linejoin="round"/>`;
+  // 真金标准（薄荷绿填充）
+  s+=`<polygon points="${truPoly}" fill="url(#rg-tru)" stroke="#5fe3a1" stroke-width="2" stroke-linejoin="round"/>`;
+  // 衰减幅度（琥珀虚线轮廓 + 节点标注）
+  s+=`<polygon points="${attPoly}" fill="none" stroke="#ffb454" stroke-width="2.2" stroke-dasharray="6,4" stroke-linejoin="round"/>`;
+  // 顶点标签 + 数值
+  axes.forEach((k,i)=>{
+    const [lx,ly]=pt(1.0,i);
+    const ax=lx>R*1.06?cx+labR*Math.cos(ang[i]):(lx<cx-R*1.06?cx-labR*Math.cos(ang[i])-0:cx+labR*Math.cos(ang[i]));
+    const ay=cy+labR*Math.sin(ang[i]);
+    const anchor=(Math.cos(ang[i])>0.3?'start':Math.cos(ang[i])<-0.3?'end':'middle');
+    s+=`<text x="${ax}" y="${ay}" font-size="12" fill="#aea796" text-anchor="${anchor}" dy="${Math.sin(ang[i])>0.3?12:-4}">${k}</text>`;
+    // 三个数值
+    const [pxA,pyA]=pt(a.app[k],i),[pxT,pyT]=pt(a.tru[k],i),[pxD,pyD]=pt(a.att[k],i);
+    s+=`<circle cx="${pxA}" cy="${pyA}" r="3.5" fill="#ff7ab6" stroke="#fff" stroke-width="0.8"/>`;
+    s+=`<circle cx="${pxT}" cy="${pyT}" r="3.5" fill="#5fe3a1" stroke="#fff" stroke-width="0.8"/>`;
+    s+=`<rect x="${pxD-2}" y="${pyD-2}" width="4" height="4" fill="#ff5757" stroke="#fff" stroke-width="0.5" transform="rotate(45 ${pxD} ${pyD})"/>`;
+  });
+  // 环数刻度
+  for(let g=1;g<=4;g++){const rr=g*R/4;s+=`<text x="${cx+3}" y="${cy-rr+3}" font-size="9" fill="#5a667a">${(g*25)}%</text>`;}
+  svg.innerHTML=s;
+  // 描述文字
+  const worst=axes.slice().sort((k1,k2)=>a.att[k2]-a.att[k1])[0];
+  document.getElementById('radar-note').innerHTML=
+    `<b style="color:var(--acc)">账面</b>六指标均较高（模型按<b>假金标准</b>评估），<b style="color:var(--good)">真金标准</b>轮廓整体内缩；衰减最大的指标为 <b style="color:var(--pri)">${worst}</b>（−${a.att[worst].toFixed(2)}）。当前 c=${S.c.toFixed(2)} · qfn=${fmtP(S.qfn)} · FDR=${fmtP(S.fdr)}。`;
+}
+
+/* ====== 噪声滑块 ====== */
+function bindNoise(id,key,disp){const el=document.getElementById(id);
+  el.oninput=()=>{S[key]=parseFloat(el.value);document.getElementById(disp).textContent=fmtP(S[key]);renderM3();renderDeriveLab();};}
+bindNoise('s-qfn','qfn','v-qfn');bindNoise('s-fdr','fdr','v-fdr');
+document.getElementById('m3-reset').onclick=()=>{S.qfn=M.qfn_s;S.fdr=M.fdr_s;
+  document.getElementById('s-qfn').value=M.qfn_s;document.getElementById('s-fdr').value=M.fdr_s;
+  document.getElementById('v-qfn').textContent=fmtP(M.qfn_s);document.getElementById('v-fdr').textContent=fmtP(M.fdr_s);renderM3();renderDeriveLab();
+  document.getElementById('m2-restore-target').value='__overall';
+  document.getElementById('m2-restore-info').textContent='已还原为数据库总体噪声值（实证）。';};
+
+/* ====== 按具体标签还原噪声 ====== */
+function buildRestoreTargets(){
+  const sel=document.getElementById('m2-restore-target');
+  let html='<option value="__overall">★ 数据库总体（实证：qfn=32.3%, FDR=31.7%）</option>';
+  // 39 诊断标签
+  const dxSorted=DATA.per_dx.slice().sort((a,b)=>(b.qfn_dx||0)-(a.qfn_dx||0));
+  html+='<optgroup label="—— 39 诊断标签（按漏标率降序） ——">';
+  dxSorted.forEach(d=>{
+    const qfn=d.qfn_dx!=null?d.qfn_dx:0;
+    const fdr=d.fdr_dx!=null?d.fdr_dx:0;
+    html+=`<option value="${encodeURIComponent(d.unit)}" data-qfn="${qfn}" data-fdr="${fdr}">${d.unit}（qfn=${fmtP(qfn)}·FDR=${fmtP(fdr)}）</option>`;
+  });
+  html+='</optgroup>';
+  // 30 OOV 词汇（OOV=100%漏标，FDR 用总体）
+  if(DATA.oov && DATA.oov.length){
+    html+='<optgroup label="—— OOV 词汇（30 类，100% 漏标） ——">';
+    DATA.oov.slice(0,30).forEach(o=>{
+      html+=`<option value="${encodeURIComponent('[OOV]'+o.term)}" data-qfn="1" data-fdr="${M.fdr_s}">${o.term}（n=${o.n}·qfn=100%）</option>`;
+    });
+    html+='</optgroup>';
+  }
+  sel.innerHTML=html;
+  sel.value='__overall';
+}
+buildRestoreTargets();
+function applyRestore(){
+  const sel=document.getElementById('m2-restore-target');
+  const opt=sel.options[sel.selectedIndex];
+  const info=document.getElementById('m2-restore-info');
+  if(!opt || sel.value==='__overall'){
+    info.innerHTML='<b style="color:var(--dim)">当前：数据库总体噪声</b>（实证 qfn='+fmtP(M.qfn_s)+' · FDR='+fmtP(M.fdr_s)+'）。';
+    return;
+  }
+  const qfn=parseFloat(opt.dataset.qfn), fdr=parseFloat(opt.dataset.fdr);
+  S.qfn=qfn; S.fdr=fdr;
+  document.getElementById('s-qfn').value=qfn; document.getElementById('s-fdr').value=fdr;
+  document.getElementById('v-qfn').textContent=fmtP(qfn); document.getElementById('v-fdr').textContent=fmtP(fdr);
+  renderM3();renderDeriveLab();
+  info.innerHTML=`<b style="color:var(--pri)">已还原</b>：<b>${decodeURIComponent(opt.value)}</b>（qfn=${fmtP(qfn)} · FDR=${fmtP(fdr)}）。粒子信号场与右侧衰减柱同步刷新。`;
+}
+document.getElementById('m2-restore-one').onclick=applyRestore;
+document.getElementById('m2-restore-target').onchange=()=>{
+  document.getElementById('m2-restore-info').innerHTML='已选择：<b>'+decodeURIComponent(document.getElementById('m2-restore-target').value)+'</b>，点击右侧按钮生效。';
+};
+
+function renderM3(){
+  const a=attenuate(S.se_app,S.sp_app,S.pi,S.qfn,S.fdr);
+  renderRadar();
+  const order=['Se','Sp','PPV','NPV','F1','AUC'];const W=720,H=380,px=58,bw=W-px-26,rowH=(H-50)/order.length;
+  let s='';
+  // 顶部说明
+  s+=`<text x="${px}" y="14" font-size="11" fill="#c2b89c">每行：左柱<tspan fill="#ff7ab6" font-weight="700"> 账面（假金标准）</tspan> · 右柱<tspan fill="#5fe3a1" font-weight="700"> 真金标准</tspan> · 右侧<tspan fill="#ff5757" font-weight="700"> −衰减</tspan></text>`;
+  order.forEach((k,i)=>{
+    const y=22+i*rowH;
+    const wA=(clamp(a.app[k],0,1))*bw;const wT=(clamp(a.tru[k],0,1))*bw;
+    const att=a.att[k];
+    const halfW=(bw-10)/2;  // 每柱最大宽度
+    const wAa=Math.min(wA,halfW); const wTt=Math.min(wT,halfW);
+    const baseY=y+4;
+    // 行标签（左侧固定区）
+    s+=`<text x="${px-8}" y="${baseY+11}" font-size="11.5" fill="#f5efdc" text-anchor="end" font-weight="600">${k}</text>`;
+    // 背景轨（淡蓝灰）
+    s+=`<rect x="${px}" y="${baseY}" width="${halfW}" height="22" rx="5" fill="#1c2740" stroke="#3a4a6a" stroke-width="0.5"/>`;
+    s+=`<rect x="${px+halfW+10}" y="${baseY}" width="${halfW}" height="22" rx="5" fill="#1c2740" stroke="#3a4a6a" stroke-width="0.5"/>`;
+    // 账面（玫瑰）柱
+    s+=`<rect x="${px}" y="${baseY}" width="${wAa}" height="22" rx="5" fill="#ff7ab6" stroke="#ffd0e6" stroke-width="1.5" opacity="0.95"/>`;
+    // 真金标准（薄荷绿）柱
+    s+=`<rect x="${px+halfW+10}" y="${baseY}" width="${wTt}" height="22" rx="5" fill="#5fe3a1" stroke="#c9f3da" stroke-width="1.5" opacity="0.95"/>`;
+    // 数值（柱内白色文字 vs 柱外补位）
+    s+=`<text x="${px+Math.min(wAa+6,halfW-4)}" y="${baseY+15}" font-size="11" font-family="monospace" fill="#fff" font-weight="700">${a.app[k].toFixed(2)}</text>`;
+    s+=`<text x="${px+halfW+10+Math.min(wTt+6,halfW-4)}" y="${baseY+15}" font-size="11" font-family="monospace" fill="#062419" font-weight="700">${a.tru[k].toFixed(2)}</text>`;
+    // 衰减（行最右）
+    s+=`<rect x="${W-72}" y="${baseY+1}" width="64" height="20" rx="6" fill="${Math.abs(att)<0.005?'#3a4a6a':'#ff5757'}" opacity="${Math.abs(att)<0.005?0.3:0.92}"/>`;
+    s+=`<text x="${W-40}" y="${baseY+15}" font-size="11.5" font-family="monospace" fill="#fff" text-anchor="middle" font-weight="700">−${att.toFixed(2)}</text>`;
+  });
+  document.getElementById('decay-bars').innerHTML=s;
+  const accApp=S.pi*a.app.Se+(1-S.pi)*a.app.Sp;
+  const accTru=S.pi*a.se_t+(1-S.pi)*a.sp_t;
+  document.getElementById('acc-app').textContent=fmtP(accApp);
+  document.getElementById('acc-tru').textContent=fmtP(accTru);
+  document.getElementById('acc-loss').textContent='−'+fmtP(accApp-accTru);
+  if(particleReady){curSeT=a.se_t;curSpT=a.sp_t;curSeA=S.se_app;curSpA=S.sp_app;}
+  S._lastAtt=a.att;
+}
+
+/* =================== 粒子信号场（4 类语义配色） =================== */
+let pcv=document.getElementById('particle'),pcx=pcv.getContext('2d');
+let parts=[],particleReady=false,curSeT=0.6,curSpT=0.9,curSeA=0.85,curSpA=0.85;
+const SIGCOL={
+  c1:'rgba(95,227,161,0.95)',   // 稳定正确（mint）
+  c2:'rgba(255,122,182,0.96)',   // 性能蒸发（rose）
+  c3:'rgba(76,199,255,0.96)',    // 意外反转（鲜亮青蓝）
+  c4:'rgba(255,87,87,0.95)'      // 稳定错误（鲜红）
+};
+function resizeParticle(){pcv.width=pcv.clientWidth||1100;pcv.height=380;initParts();}
+function initParts(){const area=(pcv.width||1100)*(pcv.height||380);const n=Math.min(900,Math.max(280,Math.round(area/800)));parts=Array.from({length:n},()=>{const pos=Math.random()<S.pi;
+  return {x:Math.random()*pcv.width,y:Math.random()*pcv.height,vx:rnd(-0.4,0.4),vy:rnd(-0.4,0.4),
+    pos:pos,r:Math.random(),seed:Math.random()*6.28};});particleReady=true;}
+function drawParticles(){
+  if(!particleReady)return;
+  pcx.clearRect(0,0,pcv.width,pcv.height);
+  let c1=0,c2=0,c3=0,c4=0;
+  const t=Date.now()*0.0015;
+  for(const p of parts){
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0||p.x>pcv.width)p.vx*=-1;
+    if(p.y<0||p.y>pcv.height)p.vy*=-1;
+    const mDB  = p.pos ? (p.r < curSeA) : (p.r < curSpA);  // 模型预测 == 数据库标签（账面正确）
+    const mExp = p.pos ? (p.r < curSeT) : (p.r < curSpT);  // 模型预测 == 专家判定（真金标准正确）
+    let cat;
+    if(mDB && mExp){cat='c1';c1++;}
+    else if(mDB && !mExp){cat='c2';c2++;}
+    else if(!mDB && mExp){cat='c3';c3++;}
+    else{cat='c4';c4++;}
+    // 蒸发粒子微微脉冲（其余稳定）
+    const baseR=2.0 + p.r*1.6;
+    const radius = cat==='c2' ? baseR*(0.92+0.18*Math.sin(t+p.seed)) : baseR;
+    pcx.beginPath();
+    pcx.arc(p.x,p.y,radius,0,7);
+    pcx.fillStyle = SIGCOL[cat];
+    pcx.fill();
+    // 蒸发粒子额外画一圈淡光晕
+    if(cat==='c2'){pcx.beginPath();pcx.arc(p.x,p.y,radius+3.5,0,7);pcx.fillStyle='rgba(255,122,182,0.15)';pcx.fill();}
+  }
+  const N=parts.length;
+  const el=id=>document.getElementById(id);
+  if(el('sig-c1'))el('sig-c1').textContent=c1+' ('+((c1/N)*100).toFixed(1)+'%)';
+  if(el('sig-c2'))el('sig-c2').textContent=c2+' ('+((c2/N)*100).toFixed(1)+'%)';
+  if(el('sig-c3'))el('sig-c3').textContent=c3+' ('+((c3/N)*100).toFixed(1)+'%)';
+  if(el('sig-c4'))el('sig-c4').textContent=c4+' ('+((c4/N)*100).toFixed(1)+'%)';
+}
+function pLoop(){ if(document.getElementById('m2').classList.contains('active'))drawParticles();
+  requestAnimationFrame(pLoop);}
+resizeParticle();pLoop();
+
+/* =================== 贝叶斯 / Bootstrap =================== */
+let histData=null;
+function runSim(mode){
+  const metric=document.getElementById('m3-metric').value;
+  const B=Math.max(50,Math.min(2000,parseInt(document.getElementById('n-'+(mode==='bayes'?'bayes':'boot')).value)||500));
+  const vals=[];
+  for(let i=0;i<B;i++){
+    let qfn,fdr,pi;
+    if(mode==='bayes'){
+      const aM=M.bayes_qfn_a,bM=M.bayes_qfn_b,aE=M.bayes_fdr_a,bE=M.bayes_fdr_b;
+      qfn=clamp(gauss()*Math.sqrt(aM*bM/((aM+bM)**2*(aM+bM+1)))+aM/(aM+bM),0,1);
+      fdr=clamp(gauss()*Math.sqrt(aE*bE/((aE+bE)**2*(aE+bE+1)))+aE/(aE+bE),0,1);
+      pi=S.pi;
+    }else{
+      let TP=0,FP=0,FN=0;
+      for(let b=0;b<DATA.per_dx.length;b++){
+        const dx=DATA.per_dx[Math.floor(Math.random()*DATA.per_dx.length)];
+        TP+=(dx.TP||0);FP+=(dx.FP||0);FN+=(dx.FN||0);
+      }
+      const NE=TP+FN,DB=TP+FP;
+      qfn=NE>0?FN/NE:0; fdr=DB>0?FP/DB:0; pi=S.pi;
+    }
+    const a=attenuate(S.se_app,S.sp_app,pi,qfn,fdr);
+    vals.push(a.att[metric]);
+  }
+  vals.sort((x,y)=>x-y);
+  const mean=vals.reduce((a,b)=>a+b,0)/B;
+  const lo=vals[Math.floor(B*0.025)],hi=vals[Math.floor(B*0.975)];
+  const pointEst=(S._lastAtt&&S._lastAtt[metric]!=null)?S._lastAtt[metric]:mean;
+  histData={vals,mean,lo,hi,pointEst,mode,metric};
+  drawHist();
+  document.getElementById('hist-info').textContent=
+    `${mode==='bayes'?'贝叶斯后验':'Bootstrap'} · n=${B} · 均值 ${mean.toFixed(3)} (95%CI ${lo.toFixed(3)}~${hi.toFixed(3)})`;
+}
+['bayes','boot'].forEach(m=>{const el=document.getElementById('n-'+m);el.onchange=()=>{
+  el.value=Math.max(50,Math.min(2000,parseInt(el.value)||500));
+};});
+function drawHist(){
+  if(!histData)return;const cv=document.getElementById('hist'),x=cv.getContext('2d');
+  const W=cv.width,H=cv.height;x.clearRect(0,0,W,H);
+  const v=histData.vals;const min=Math.min(...v,histData.pointEst),max=Math.max(...v,histData.pointEst);
+  const lo=min-0.02,hi=max+0.02,span=hi-lo||1;const bins=40;const cnt=new Array(bins).fill(0);
+  v.forEach(val=>{let b=Math.floor((val-lo)/span*bins);b=clamp(b,0,bins-1);cnt[b]++;});
+  const maxc=Math.max(...cnt);const bw=W/bins;
+  // 贝叶斯=暖琥珀(实色)，Bootstrap=鲜亮青蓝(实色)，对比度比之前的玫瑰高
+  for(let i=0;i<bins;i++){const h=cnt[i]/maxc*(H-50);const cx=i*bw+bw/2;
+    const col=histData.mode==='bayes'?'rgba(255,180,84,0.92)':'rgba(76,199,255,0.92)';
+    x.fillStyle=col;x.fillRect(i*bw+1,H-30-h,bw-2,h);
+    // 顶部描边
+    x.strokeStyle=histData.mode==='bayes'?'#ffd09a':'#a0e1ff';
+    x.lineWidth=1;x.strokeRect(i*bw+1,H-30-h,bw-2,h);
+  }
+  x.strokeStyle='#3a4a6a';x.lineWidth=1.5;x.beginPath();x.moveTo(0,H-30);x.lineTo(W,H-30);x.stroke();
+  const px=(histData.pointEst-lo)/span*W;
+  x.strokeStyle='#ffffff';x.lineWidth=2.5;x.setLineDash([5,4]);x.beginPath();
+  x.moveTo(px,10);x.lineTo(px,H-30);x.stroke();x.setLineDash([]);
+  x.fillStyle='#fff';x.font='12px monospace';x.fillText('点估计 '+histData.pointEst.toFixed(3),Math.min(px+6,W-150),22);
+  x.fillStyle=histData.mode==='bayes'?'#ffb454':'#4cc7ff';
+  x.font='bold 12px monospace';
+  x.fillText((histData.mode==='bayes'?'贝叶斯均值 ':'Bootstrap均值 ')+histData.mean.toFixed(3),12,H-10);
+}
+document.getElementById('run-bayes').onclick=()=>runSim('bayes');
+document.getElementById('run-boot').onclick=()=>runSim('boot');
+document.getElementById('clear-hist').onclick=()=>{histData=null;
+  const cv=document.getElementById('hist'),x=cv.getContext('2d');
+  x.clearRect(0,0,cv.width,cv.height);
+  document.getElementById('hist-info').textContent='';};
+document.getElementById('m3-metric').onchange=()=>{if(histData){histData.mode=histData.mode;runSim(histData.mode);}};
+
+/* =================== 模块3（原 M4） · 阈值推演 =================== */
+function qfnMaxFor(metric,c,pi,fdr,delta){
+  const clean=attenuate(c,c,pi,0,fdr).tru[metric];
+  const floor=clean-delta;let prev=null;
+  for(let q=0;q<=0.5;q+=0.0025){const t=attenuate(c,c,pi,q,fdr).tru[metric];
+    if(t<=floor){if(prev===null)return q;return (prev+q)/2;}prev=q;}
+  return 0.5;
+}
+function renderM4(){
+  const svg=document.getElementById('thr-plot');const W=620,H=400,px=50,py=24,bw=W-px-18,bh=H-py-46;
+  const metric=document.getElementById('s-metric4').value;S.metric4=metric;
+  const c=S.c4,pi=S.pi,fdr=S.fdr4,delta=S.delta;
+  const qmax=qfnMaxFor(metric,c,pi,fdr,delta);
+  const X=q=>px+(q/0.5)*bw, Y=v=>py+bh-(clamp(v,0,1))*bh;
+  let s='';
+  s+=`<rect x="${px}" y="${py}" width="${(qmax/0.5)*bw}" height="${bh}" fill="rgba(95,227,161,0.10)"/>`;
+  s+=`<rect x="${px+(qmax/0.5)*bw}" y="${py}" width="${bw-(qmax/0.5)*bw}" height="${bh}" fill="rgba(255,122,122,0.10)"/>`;
+  let path='';for(let q=0;q<=0.5;q+=0.005){const t=attenuate(c,c,pi,q,fdr).tru[metric];
+    path+=(q===0?'M':'L')+X(q)+' '+Y(t)+' ';}
+  s+=`<path d="${path}" fill="none" stroke="#ffb454" stroke-width="2.5"/>`;
+  const clean=attenuate(c,c,pi,0,fdr).tru[metric];
+  s+=`<line x1="${px}" y1="${Y(clean-delta)}" x2="${px+bw}" y2="${Y(clean-delta)}" stroke="#ffd166" stroke-dasharray="5,4"/>`;
+  s+=`<text x="${px+bw-4}" y="${Y(clean-delta)-5}" font-size="10.5" fill="#ffd166" text-anchor="end">安全下限 ${((clean-delta)).toFixed(2)}</text>`;
+  s+=`<line x1="${X(qmax)}" y1="${py}" x2="${X(qmax)}" y2="${py+bh}" stroke="#5fe3a1" stroke-dasharray="4,3"/>`;
+  s+=`<text x="${X(qmax)}" y="${py+12}" font-size="10.5" fill="#5fe3a1" text-anchor="middle">qfn_max ${fmtP(qmax)}</text>`;
+  s+=`<line x1="${X(M.qfn_s)}" y1="${py}" x2="${py+bh}" x2="${X(M.qfn_s)}" stroke="#ffffff" stroke-width="1.6" stroke-dasharray="6,4" opacity="0.85"/>`;
+  s+=`<text x="${X(M.qfn_s)}" y="${py+bh+16}" font-size="10.5" fill="#fff" text-anchor="middle">实证 ${fmtP(M.qfn_s)}</text>`;
+  s+=`<line x1="${px}" y1="${py+bh}" x2="${px+bw}" y2="${py+bh}" stroke="#3a4a6a"/>`;
+  s+=`<line x1="${px}" y1="${py}" x2="${px}" y2="${py+bh}" stroke="#3a4a6a"/>`;
+  for(let i=0;i<=5;i++){const gx=px+bw*i/5;s+=`<text x="${gx}" y="${py+bh+16}" font-size="9.5" fill="#aea796" text-anchor="middle">${(i*10)}%</text>`;}
+  for(let i=0;i<=4;i++){const gy=py+bh-i*bh/4;s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="#aea796" text-anchor="end">${i/4}</text>`;}
+  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="#aea796" text-anchor="middle">数据库漏标率 qfn</text>`;
+  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="#aea796" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">真金标准 ${metric}</text>`;
+  svg.innerHTML=s;
+  const ratio=M.qfn_s/qmax;
+  document.getElementById('m4-kpi').innerHTML=
+    `<div class="tile good"><div class="v" style="font-size:18px">${fmtP(qmax)}</div><div class="l">安全阈值 qfn_max</div></div>
+     <div class="tile bad"><div class="v" style="font-size:18px">${fmtP(M.qfn_s)}</div><div class="l">当前实证漏标率</div></div>
+     <div class="tile warn"><div class="v" style="font-size:18px">${ratio.toFixed(1)}×</div><div class="l">超出安全线倍数</div></div>`;
+  document.getElementById('m4-note').innerHTML=
+    `若把数据库漏标率从实证 <b>${fmtP(M.qfn_s)}</b> 压到 <b style="color:var(--good)">${fmtP(qmax)}</b> 以下，模型在<b>真金标准</b>下的 ${metric} 损失将 ≤ Δ=${delta.toFixed(2)}。
+     当前实证漏标率已是安全阈值的 <b>${ratio.toFixed(1)} 倍</b>——这是模型训练的硬瓶颈。`;
+  renderCPlot();
+}
+function renderCPlot(){
+  const svg=document.getElementById('c-plot');const W=1040,H=320,px=55,py=24,bw=W-px-20,bh=H-py-46;
+  const metric=document.getElementById('s-metric4').value,fdr=S.fdr4,delta=S.delta,pi=S.pi;
+  const X=c=>px+((c-0.5)/0.5)*bw, Y=q=>py+bh-(clamp(q,0,0.5)/0.5)*bh;
+  let s=`<rect x="${px}" y="${py}" width="${bw}" height="${bh}" fill="rgba(40,46,62,0.4)"/>`;
+  let path='';for(let c=0.5;c<=1.0001;c+=0.01){const q=qfnMaxFor(metric,c,pi,fdr,delta);
+    path+=(c===0.5?'M':'L')+X(c)+' '+Y(q)+' ';}
+  s+=`<path d="${path}" fill="none" stroke="#5fe3a1" stroke-width="2.5"/>`;
+  s+=`<circle cx="${X(S.c4)}" cy="${Y(M.qfn_s)}" r="6" fill="#ff7a7a"/>`;
+  s+=`<text x="${X(S.c4)}" y="${Y(M.qfn_s)-12}" font-size="11" fill="#ff7a7a" text-anchor="middle">实证漏标率</text>`;
+  s+=`<line x1="${px}" y1="${Y(M.qfn_s)}" x2="${px+bw}" y2="${Y(M.qfn_s)}" stroke="#ff7a7a" stroke-dasharray="5,4" opacity="0.6"/>`;
+  s+=`<line x1="${px}" y1="${py+bh}" x2="${px+bw}" y2="${py+bh}" stroke="#3a4a6a"/>`;
+  s+=`<line x1="${px}" y1="${py}" x2="${px}" y2="${py+bh}" stroke="#3a4a6a"/>`;
+  for(let i=0;i<=5;i++){const gx=px+bw*i/5;s+=`<text x="${gx}" y="${py+bh+16}" font-size="10" fill="#aea796" text-anchor="middle">${(0.5+i*0.1).toFixed(1)}</text>`;}
+  for(let i=0;i<=5;i++){const gy=py+bh-i*bh/5;s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="#aea796" text-anchor="end">${(i*10)}%</text>`;}
+  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="#aea796" text-anchor="middle">模型能力 c</text>`;
+  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="#aea796" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">qfn_max（可容忍漏标率）</text>`;
+  svg.innerHTML=s;
+}
+function bindM4(id,key,disp,fmt){const el=document.getElementById(id);
+  el.oninput=()=>{S[key]=parseFloat(el.value);document.getElementById(disp).textContent=fmt(S[key]);renderM4();};}
+bindM4('s-c4','c4','v-c4',x=>x.toFixed(2));
+bindM4('s-delta','delta','v-delta',x=>x.toFixed(2));
+bindM4('s-fdr4','fdr4','v-fdr4',x=>fmtP(x));
+document.getElementById('s-metric4').onchange=renderM4;
+
+/* =================== 初始化 =================== */
+renderM1tiles();renderErrBars();renderScatter();renderDxTable();renderOov();renderCoocHeat();
+renderDeriveLab();renderM2lite();renderM3();renderM4();
+
+/* ============================================================
+   单项标签统计模块 (Per-Diagnosis Label Statistics)
+   —— 面向临床医生：看清每一种诊断标签的噪声如何侵蚀模型可信度
+   兼容两种 per_dx schema：
+     · PTB-XL  : cn / qfn / fdr / se / sp / ppv / n_db / tp,fp,fn,tn / code
+     · Ningbo   : unit / qfn_dx / fdr_dx / sens / spec / ppv / n_db / prevalence / sev / cat
+   ============================================================ */
+const PD_COL = {
+  pri:'#ffb454', acc:'#ff7ab6', good:'#5fe3a1', warn:'#ffd166',
+  bad:'#ff5757', sky:'#4cc7ff', grape:'#c8a8ff'
+};
+const PD_TXT='#e8eaf2', PD_DIM='#9aa0b5';
+/* PTB-XL 临床紧急度映射（Ningbo 自带 sev 字段，无需此表）1=低 5=高 */
+const PD_URG = {
+  AFIB:5,AFLT:5,AVB1:4,AVB2:5,AVB3:5,AMI:5,IMI:5,ASMI:5,ALMI:5,ILMI:5,LMI:5,
+  CLBBB:4,CRBBB:3,ILBBB:3,IRBBB:3,IVCD:3,LAFB:3,LPFB:3,WPW:4,PACE:4,LVH:3,RVH:3,
+  PVC:3,PAC:3,SVT:4,AT:4,DIG:2,EL:2,LQT:4,LOW:2,SEHYP:3,LAO:2,RAO:2,HYP:2,
+  NORM:1,NDT:1,NST:1,TWC:1,TVL:1,TINV:1,STD:2,STE:3,QWAVE:4,PR:2,ISCH:4,INJ:4
+};
+function pdNormPerDx(ds){
+  return ds.map(d=>{
+    const isNb = ('unit' in d);
+    const name = isNb ? d.unit : d.cn;
+    const code = isNb ? d.unit : d.code;
+    const qfn = isNb ? d.qfn_dx : d.qfn;
+    const fdr = isNb ? d.fdr_dx : d.fdr;
+    const se  = isNb ? d.sens : d.se;
+    const sp  = isNb ? d.spec : d.sp;
+    const ppv = d.ppv;
+    const n_db= d.n_db;
+    const prev= isNb ? d.prevalence
+                      : ((d.tp+d.fn)/(d.tp+d.fp+d.fn+d.tn||1));
+    const cat = isNb ? (d.cat||'') : '';
+    const urg = isNb ? (d.sev||2) : (PD_URG[code]||2);
+    return {name,code,qfn,fdr,se,sp,ppv,n_db,prev,cat,urg};
+  /* 宽松过滤：只剔除完全没数据的诊断（se/sp/prev 都是 null/NaN），
+     边界 0/1 由 pdDerive 内的 clamp01 兜底（否则会丢弃 20+ 个高流行率诊断） */
+  }).filter(d=>d.name && Number.isFinite(d.qfn) && Number.isFinite(d.fdr));
+}
+function pdDerive(d){
+  /* 边界值夹紧到 (eps, 1-eps) —— 0/1 会让 qnorm 返回 ±Inf，使 AUC 与 dSe 全部 NaN */
+  const eps=1e-3, clamp01=x=>Math.max(eps,Math.min(1-eps,x));
+  const se=clamp01(d.se), sp=clamp01(d.sp), prev=clamp01(d.prev);
+  const at = attenuate(se,sp,prev,d.qfn,d.fdr);
+  const auc_app = auc_b(se,sp);
+  const auc_true= auc_b(at.se_true,at.sp_true);
+  return Object.assign({},d,{
+    se_true:at.se_true, sp_true:at.sp_true,
+    auc_app, auc_true, dSe:se-at.se_true, dSp:sp-at.sp_true,
+    noise:Math.max(d.qfn,d.fdr)
+  });
+}
+/* ---------- 画布通用工具 ---------- */
+function pdCanvas(h){
+  const cv=document.getElementById('pd-canvas');
+  const dpr=Math.min(2, window.devicePixelRatio||1);  // Retina 屏缩放，避免字体/几何发糊
+  const cssH=h||420;
+  const cssW=cv.clientWidth||900;
+  cv.style.height=cssH+'px';                            // 同步 CSS 高度，消除 buffer≠display
+  cv.width=Math.round(cssW*dpr);
+  cv.height=Math.round(cssH*dpr);
+  const c=cv.getContext('2d');
+  c.setTransform(dpr,0,0,dpr,0,0);                      // 在 CSS 像素坐标系下绘制
+  return {cv,c,w:cssW,h:cssH};
+}
+function pdText(c,x,y,t,col,size,align){c.fillStyle=col||PD_TXT;c.font=(size||12)+'px -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Helvetica,Arial,sans-serif';
+  c.textAlign=align||'left';c.textBaseline='middle';c.fillText(t,x,y);}
+function pdBarsH(items,h,opt){ /* items:[{label,val,col,sub}] val in 0..1 */
+  opt=opt||{};const {cv,c,w,h:H}=pdCanvas(h);c.clearRect(0,0,w,H);
+  const padL=opt.padL||150,padR=66,barH=Math.min(26,(H-20)/items.length);
+  const top=10, gap=(H-20-items.length*barH)/Math.max(1,items.length-1);
+  const maxv=opt.maxV||1;
+  const plotW=w-padL-padR;
+  /* 零轴基线（避免无柱时画面"空"到看不出坐标） */
+  c.strokeStyle='rgba(255,255,255,0.13)';c.lineWidth=1;c.beginPath();
+  c.moveTo(padL+0.5,top-3);c.lineTo(padL+0.5,top+items.length*(barH+gap)-gap+3);c.stroke();
+  items.forEach((it,i)=>{
+    const y=top+i*(barH+gap)+barH/2;
+    pdText(c,padL-8,y,it.label,PD_TXT,12,'right');
+    let bw=plotW*Math.min(1,Math.max(0,it.val/maxv));
+    const isZero=!(it.val>0);
+    if(isZero){ bw=0; }
+    else if(bw<4){ bw=4; }                              /* 保底最小可见宽度，避免 ≤1% 看不到 */
+    c.fillStyle=it.col||PD_COL.pri;
+    c.fillRect(padL,top+i*(barH+gap),bw,barH);
+    /* 标注：自定义 sub 优先；零值显示 "0% · 无显著差异"，避免被误判为渲染缺失 */
+    let subText;
+    if(it.sub!=null) subText=it.sub;
+    else if(isZero) subText='0% · 无显著差异';
+    else subText=(it.val*100).toFixed(0)+'%';
+    /* 长副标：放到条形内部靠右（条形够宽时），否则仍放外部靠左 */
+    const inside=!isZero && bw>120;
+    pdText(c, inside?(padL+bw-6):(padL+bw+8), y, subText,
+           inside?'#1a1d29':(isZero?PD_DIM:PD_TXT), 11, inside?'right':'left');
+  });
+}
+function pdGridBox(c,x,y,ww,hh){c.strokeStyle='rgba(255,255,255,0.08)';c.strokeRect(x,y,ww,hh);}
+function pdLegend(c,items,x,y){let cx=x;items.forEach(it=>{c.fillStyle=it.col;c.fillRect(cx,y-5,10,10);
+  pdText(c,cx+14,y,it.t,PD_DIM,11,'left');cx+=14+it.t.length*7+18;});}
+
+/* ---------- 12 个临床视角视图 ---------- */
+const PD_VIEWS=[
+  {id:'qfn_top',  name:'① 漏标率最高的诊断（及其对模型敏感度的影响）'},
+  {id:'fdr_top',  name:'② 误标率最高的诊断（及对临床告警可信度的影响）'},
+  {id:'se_eros',  name:'③ 噪声标签对模型敏感度的影响（账面−真金标准）'},
+  {id:'acc_trend',name:'④ 不同噪声比例下各诊断敏感度变化趋势（选诊断）'},
+  {id:'confid',   name:'⑤ 标签置信度分布及其与临床诊断一致性的关联'},
+  {id:'highrisk', name:'⑥ 高风险诊断类别在噪声环境下的误判率'},
+  {id:'arch',     name:'⑦ 标签噪声对不同模型架构鲁棒性的对比影响（示意）'},
+  {id:'ppv',      name:'⑧ 各诊断标签准确率（PPV）'},
+  {id:'auc_dec',  name:'⑨ 逐诊断 AUC 衰减（账面 vs 真金标准）'},
+  {id:'hotspot',  name:'⑩ 标签混淆热点（漏标 vs 误标四象限）'},
+  {id:'unc_n',    name:'⑪ 样本量驱动的统计不确定性（小样本不可靠）'},
+  {id:'prio',     name:'⑫ 临床优先级 × 噪声严重度矩阵（需重点核查）'}
+];
+let PD_DER=null, PD_NAME='';
+function pdInit(name){
+  PD_NAME=name;PD_DER=pdNormPerDx(DATA.per_dx).map(pdDerive);
+  const sel=document.getElementById('pd-view');
+  sel.innerHTML=PD_VIEWS.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+  const dxs=PD_DER.slice().sort((a,b)=>b.n_db-a.n_db);
+  document.getElementById('pd-dx').innerHTML=dxs.map(d=>`<option value="${d.code}">${d.name}（n=${d.n_db}）</option>`).join('');
+  sel.onchange=pdRender;document.getElementById('pd-dx').onchange=pdRender;
+  pdRender();
+}
+function pdRender(){
+  const v=document.getElementById('pd-view').value;
+  const dxw=document.getElementById('pd-dxwrap');
+  dxw.style.display=(v==='acc_trend')?'flex':'none';
+  const D=PD_DER.slice().sort((a,b)=>b.qfn-a.qfn);
+  const note=document.getElementById('pd-note');
+  const sub=document.getElementById('pd-sub');
+  if(v==='qfn_top'){
+    const top=D.slice(0,12);
+    pdBarsH(top.map(d=>({label:d.name,val:d.qfn,col:PD_COL.bad,
+      sub:(d.qfn*100).toFixed(0)+'% · 真敏'+(d.se_true*100).toFixed(0)+'%'})),430);
+    sub.innerHTML='漏标率 = 真正患病却被标成「正常」的比例';
+    note.innerHTML='<b>临床解读：</b>这些诊断被系统性<b>漏标</b>——模型在含噪标签上训练后，会学到「不报这些病」的偏置，'+
+      '真实世界灵敏度（真金标准）被严重压低（右侧「真敏」列）。房颤、心梗等漏标会直接延误救治。';
+  }else if(v==='fdr_top'){
+    const top=PD_DER.slice().sort((a,b)=>b.fdr-a.fdr).slice(0,12);
+    pdBarsH(top.map(d=>({label:d.name,val:d.fdr,col:PD_COL.warn,
+      sub:(d.fdr*100).toFixed(0)+'% · 标签准'+(d.ppv*100).toFixed(0)+'%'})),430);
+    sub.innerHTML='误标率 = 被标成某病、其实没病的比例';
+    note.innerHTML='<b>临床解读：</b>误标率高的诊断属于<b>过度调用</b>（如结构性异常码（ASMI=前间壁心梗/ISC=缺血性ST改变））。'+
+      '标签「准确率(PPV)」随之崩塌，模型会频繁报警假阳性，长期削弱临床医生对系统的信任（狼来了效应）。';
+  }else if(v==='se_eros'){
+    const top=PD_DER.slice().sort((a,b)=>b.dSe-a.dSe).slice(0,12);
+    pdBarsH(top.map(d=>({label:d.name,val:d.dSe,col:(d.urg||0)>=4?PD_COL.bad:PD_COL.acc,
+      sub:Number.isFinite(d.dSe)?('−'+(d.dSe*100).toFixed(0)+'pp'):'数据缺失'})),430);
+    sub.innerHTML='ΔSe = 账面灵敏度 − 真金标准灵敏度（被噪声掺掉的水分）';
+    note.innerHTML='<b>临床解读：</b>所有条形均为正，说明账面灵敏度<b>全部被高估</b>。'+
+      '红色为高危诊断（紧急度≥4），其灵敏度虚高最危险——医生看到的「灵敏度 90%」实际可能只有一半。';
+  }else if(v==='acc_trend'){
+    const code=document.getElementById('pd-dx').value;
+    const d=PD_DER.find(x=>x.code===code)||PD_DER[0];
+    const {cv,c,w}=pdCanvas(420);c.clearRect(0,0,w,420);
+    pdText(c,16,20,'「'+d.name+'」真金标准灵敏度随漏标率 qfn 变化（当前 fdr='+(d.fdr*100).toFixed(0)+'%，流行率 π='+(d.prev*100).toFixed(1)+'%）',PD_TXT,13);
+    const padL=54,padB=40,padT=34,plotW=w-padL-20,plotH=420-padT-padB;
+    pdGridBox(c,padL,padT,plotW,plotH);
+    pdText(c,padL-8,padT+plotH/2,'Se_true',PD_DIM,11,'right');
+    pdText(c,padL+plotW/2,420-12,'漏标率 qfn →',PD_DIM,11,'center');
+    const pts=[];for(let q=0;q<=1.0001;q+=0.05){const at=attenuate(d.se,d.sp,d.prev,q,d.fdr);pts.push([q,at.se_true]);}
+    c.strokeStyle=PD_COL.good;c.lineWidth=2.5;c.beginPath();
+    pts.forEach((p,i)=>{const x=padL+p[0]*plotW,y=padT+(1-p[1])*plotH;i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();
+    /* 标注当前实际 qfn */
+    const xNow=padL+d.qfn*plotW,yNow=padT+(1-d.se_true)*plotH;
+    c.fillStyle=PD_COL.bad;c.beginPath();c.arc(xNow,yNow,5,0,7);c.fill();
+    pdText(c,xNow+8,yNow-10,'当前 qfn='+(d.qfn*100).toFixed(0)+'% → Se_true='+(d.se_true*100).toFixed(0)+'%',PD_COL.bad,11,'left');
+    note.innerHTML='<b>临床解读：</b>即便账面灵敏度设定为 '+(d.se*100).toFixed(0)+'%，一旦该诊断的漏标率(qfn)升高，'+
+      '真实灵敏度沿绿线快速下滑；<b>罕见病（π 小）尤为陡峭</b>——少量漏标即可让真灵敏腰斩。';
+  }else if(v==='confid'){
+    const {cv,c,w}=pdCanvas(420);c.clearRect(0,0,w,420);
+    pdText(c,16,20,'各诊断标签准确率(PPV)分布 —— 低 PPV = 标签与临床真值脱节',PD_TXT,13);
+    const bins=[0,0,0,0];PD_DER.forEach(d=>{if(d.ppv>=0.8)bins[3]++;else if(d.ppv>=0.6)bins[2]++;else if(d.ppv>=0.4)bins[1]++;else bins[0]++;});
+    const labels=['<40%','40–60%','60–80%','≥80%'];const cols=[PD_COL.bad,PD_COL.warn,PD_COL.sky,PD_COL.good];
+    const bw=w/4;bins.forEach((b,i)=>{const bh=b/Math.max(1,Math.max(...bins))*300;
+      c.fillStyle=cols[i];c.fillRect(i*bw+20,370-bh,bw-40,bh);
+      pdText(c,i*bw+bw/2,384,labels[i],PD_DIM,11,'center');
+      pdText(c,i*bw+bw/2,360-bh,(b+'个'),PD_TXT,12,'center');});
+    pdText(c,16,408,'红色带(<40%)：标签几乎不可信，与双阅「金标准本身都不一致」互为印证',PD_DIM,11);
+    const low=PD_DER.filter(d=>d.ppv<0.7).length;
+    note.innerHTML='<b>临床解读：</b>共 '+PD_DER.length+' 个诊断中，'+low+' 个标签准确率(PPV)<70%，'+
+      '即<b>超过三成的「阳性标签」其实是错的</b>。这与双阅一致性仅 '+(typeof IR!=='undefined'? (IR.rate*100).toFixed(0):'?')+'% 互相印证：'+
+      '标签置信度低，本质是「金标准不可复现」在数据上的投影。';
+  }else if(v==='highrisk'){
+    const hr=PD_DER.filter(d=>(d.urg||0)>=4).sort((a,b)=>b.qfn-a.qfn);
+    pdBarsH(hr.map(d=>({label:d.name,val:d.qfn,col:PD_COL.bad,
+      sub:'漏标'+(d.qfn*100).toFixed(0)+'% / 误标'+(d.fdr*100).toFixed(0)+'%'})),Math.max(300,hr.length*30+40));
+    sub.innerHTML='仅纳入紧急度≥4 的高危诊断（心梗、房颤、AVB、预激、起搏等）';
+    note.innerHTML='<b>临床解读：</b>最该「一个都不能漏」的高危诊断，恰恰漏标率最高。'+
+      '例如房颤账面灵敏度看似尚可，实际漏标率(qfn)极高——这类模型的临床部署风险最大，'+
+      '必须配合人工复核或要求更高的账面灵敏度阈值。';
+  }else if(v==='arch'){
+    const {cv,c,w}=pdCanvas(420);c.clearRect(0,0,w,420);
+    pdText(c,16,20,'相同标签噪声下，不同模型架构的「有效 AUC 保留率」（假设情景）',PD_COL.warn,13);
+    const archs=[['CNN (ResNet-1D)',0.80],['CNN (深)',0.86],['ViT / Transformer',0.91],['集成 Ensemble',0.95]];
+    const aucTrueMean=PD_DER.reduce((s,d)=>s+(Number.isFinite(d.auc_true)?d.auc_true:0),0)/PD_DER.length;
+    const aggNoise=Number.isFinite(aucTrueMean)?(1-aucTrueMean):PD_DER.reduce((s,d)=>s+Math.max(d.qfn,d.fdr),0)/PD_DER.length;
+    const bw=w/4;archs.forEach((a,i)=>{const ret=a[1];const eff=ret*(1-aggNoise*0.6);
+      const bh=Math.max(0,Math.min(300,eff*300));c.fillStyle=PD_COL.sky;c.fillRect(i*bw+30,370-bh,bw-60,bh);
+      pdText(c,i*bw+bw/2,384,a[0],PD_DIM,10,'center');
+      pdText(c,i*bw+bw/2,360-bh,(eff*100).toFixed(0)+'%',PD_TXT,12,'center');});
+    pdText(c,16,408,'※ 此为「架构相对鲁棒系数」示意，非本数据集实测；结论：架构只改斜率，改不了标签噪声本身',PD_DIM,10);
+    note.innerHTML='<b>方法论提示：</b>换更深的网络或 Transformer 能小幅提升对标签噪声的<b>容忍度</b>，'+
+      '但无法消除——因为噪声在<b>标签</b>里，不在<b>模型容量</b>里。最根本的改进仍是清洗标注（见 M5 按标签还原 / 双阅复核）。';
+  }else if(v==='ppv'){
+    const top=PD_DER.slice().sort((a,b)=>b.ppv-a.ppv).slice(0,14);
+    pdBarsH(top.map(d=>({label:d.name,val:d.ppv,col:d.ppv<0.7?PD_COL.warn:PD_COL.good,
+      sub:(d.ppv*100).toFixed(0)+'%'})),460);
+    sub.innerHTML='标签准确率 PPV = 标为阳性者中真阳性的比例';
+    note.innerHTML='<b>临床解读：</b>PPV<70%（黄色）的诊断，医生若照单全收会频繁被误导。'+
+      '诊断模型应像检验报告一样附带<b>「该标签的可信度」</b>，PPV 低者需系统主动提示「建议人工确认」。';
+  }else if(v==='auc_dec'){
+    const top=PD_DER.slice().sort((a,b)=>b.n_db-a.n_db).slice(0,12);
+    const {cv,c,w}=pdCanvas(440);c.clearRect(0,0,w,440);
+    pdText(c,16,18,'逐诊断 AUC 衰减（玫瑰=账面 / 薄荷=真金标准）',PD_TXT,13);
+    const n=top.length,padL=110,padR=20,gw=(w-padL-padR)/n,barW=gw*0.32;
+    top.forEach((d,i)=>{const x=padL+i*gw+ (gw-barW*2-6)/2;
+      const hA=d.auc_app*320,hT=d.auc_true*320;
+      c.fillStyle=PD_COL.acc;c.fillRect(x,360-hA,barW,hA);
+      c.fillStyle=PD_COL.good;c.fillRect(x+barW+6,360-hT,barW,hT);
+      pdText(c,padL+i*gw+gw/2,376,d.code||d.name,PD_DIM,9,'center');
+      pdText(c,x+barW/2,360-hA-8,(d.auc_app).toFixed(2),PD_COL.acc,9,'center');
+      pdText(c,x+barW+6+barW/2,360-hT-8,(d.auc_true).toFixed(2),PD_COL.good,9,'center');});
+    pdLegend(c,[{t:'账面',col:PD_COL.acc},{t:'真金标准',col:PD_COL.good}],padL,398);
+    note.innerHTML='<b>临床解读：</b>对多数诊断，账面 AUC 与真金标准 AUC 的落差，正是被标签噪声「掺掉」的判别力。'+
+      '差值越大，说明该诊断的公开指标越不可信。';
+  }else if(v==='hotspot'){
+    const {cv,c,w}=pdCanvas(440);c.clearRect(0,0,w,440);
+    pdText(c,16,18,'标签混淆热点：横轴=漏标率 qfn，纵轴=误标率 fdr',PD_TXT,13);
+    const padL=54,padB=40,padT=34,plotW=w-padL-20,plotH=440-padT-padB;
+    /* 四象限底色 */
+    c.fillStyle='rgba(95,227,161,0.07)';c.fillRect(padL,padT,plotW/2,plotH/2); /* 左下干净 */
+    c.fillStyle='rgba(255,87,87,0.07)';c.fillRect(padL+plotW/2,padT,plotW/2,plotH/2); /* 右上双高 */
+    c.fillStyle='rgba(255,122,182,0.07)';c.fillRect(padL,padT+plotH/2,plotW/2,plotH/2); /* 右下漏标 */
+    c.fillStyle='rgba(255,209,102,0.07)';c.fillRect(padL+plotW/2,padT+plotH/2,plotW/2,plotH/2); /* 左上误标 */
+    pdGridBox(c,padL,padT,plotW,plotH);
+    pdText(c,padL+6,padT+10,'误标型(over-call)',PD_DIM,10,'left');
+    pdText(c,padL+plotW-6,padT+10,'双高(最糟)',PD_DIM,10,'right');
+    pdText(c,padL+6,padT+plotH-6,'干净',PD_DIM,10,'left');
+    pdText(c,padL+plotW-6,padT+plotH-6,'漏标型(under-call)',PD_DIM,10,'right');
+    pdText(c,padL-8,padT+plotH/2,'误标率 fdr →',PD_DIM,11,'right');
+    PD_DER.forEach(d=>{const x=padL+d.qfn*plotW,y=padT+(1-d.fdr)*plotH;
+      c.fillStyle=(d.urg||0)>=4?PD_COL.bad:PD_COL.sky;
+      c.beginPath();c.arc(x,y,(d.urg||0)>=4?6:4,0,7);c.fill();});
+    note.innerHTML='<b>临床解读：</b>落在<b>右下(漏标型)</b>的多为房颤/心梗等——该报没报；'+
+      '落在<b>左上(误标型)</b>的多为结构码——不该报却报。两者都需要针对性清洗：'+
+      '前者补标，后者去噪。右上角「双高」是标签完全失真的诊断。';
+  }else if(v==='unc_n'){
+    const top=PD_DER.slice().sort((a,b)=>a.n_db-b.n_db).slice(0,14);
+    pdBarsH(top.map(d=>({label:d.name+' (n='+d.n_db+')',val:1/Math.sqrt(d.n_db),
+      col:PD_COL.grape,sub:'±'+(1/Math.sqrt(d.n_db)*100).toFixed(0)+'pp*'})),460,{maxV:1/Math.sqrt(2)});
+    sub.innerHTML='误差条宽度 ∝ 1/√n（小样本 → 噪声率估计不可靠）';
+    note.innerHTML='<b>临床解读：</b>很多罕见诊断的样本量极小（n<10），其 qfn/fdr 估计的置信区间极宽，'+
+      '点估计本身不可信。对这些诊断，<b>不宜直接引用数值</b>，应先积累病例或依赖专家共识。';
+  }else if(v==='prio'){
+    const {cv,c,w}=pdCanvas(460);c.clearRect(0,0,w,460);
+    pdText(c,16,18,'临床优先级 × 标签噪声严重度矩阵（红=需重点核查）',PD_TXT,13);
+    const urgLab=['','低危','中低','中','中高','高危'];const cols=['低噪声','中噪声','高噪声'];
+    const padL=70,padT=44,cellW=(w-padL-20)/3,cellH=(460-padT-30)/5;
+    cols.forEach((cl,j)=>pdText(c,padL+j*cellW+cellW/2,32,cl,PD_DIM,11,'center'));
+    for(let u=5;u>=1;u--){const y=padT+(5-u)*cellH;
+      pdText(c,padL-8,y+cellH/2,'紧急度'+urgLab[u],PD_DIM,10,'right');
+      for(let j=0;j<3;j++){const cell=PD_DER.filter(d=>(d.urg||0)===u&&
+        (j===0?d.noise<0.33:j===1?d.noise<0.66:d.noise>=0.66));
+        const names=cell.map(d=>d.name).slice(0,3).join('、');
+        const sev=j*2+(u>=4?1:0);
+        c.fillStyle='rgba('+(u>=4&&j>=1?'255,87,87':'200,168,255')+','+(0.12+0.06*sev)+')';
+        c.fillRect(padL+j*cellW+2,y+2,cellW-4,cellH-4);
+        pdText(c,padL+j*cellW+8,y+cellH/2,names||'—',PD_TXT,10,'left');}}
+    note.innerHTML='<b>临床解读：</b>右上角「高危 × 高噪声」的格子（红）是<b>最需要先动手清洗</b>的标签——'+
+      '它们既致命又最不可信。建议优先安排双阅复核 + 专家补标，再重新训练模型。';
+  }
+}
+
+/* ====== 模块6 数据 ====== */
+const SUB = {"main":{"n":613,"tot":623,"acc":274,"inacc":339,"und":10},"subset":{"n_t1":125,"n_pure":37,"abcd":{"A":39,"B":69,"C":8,"D":9},"abcd_pure":{"A":3,"B":29,"C":2,"D":3},"miss":{"p":0.376,"lo":0.295977,"hi":0.463417},"false":{"p":0.624,"lo":0.536583,"hi":0.704023},"miss_pure":{"p":0.135135,"lo":0.059133,"hi":0.279774},"false_pure":{"p":0.864865,"lo":0.720226,"hi":0.940867}},"baseline":{"n":364,"miss":{"p":0.214286,"lo":0.175231,"hi":0.259308},"false":{"p":0.56044,"lo":0.509083,"hi":0.610534}},"fisher":{"or":2.441082,"lo":1.388555,"hi":4.339473,"p":0.001227},"disease":{"labels":["心房颤动/扑动","室上性心动过速","室性心动过速","心室颤动","高度/III度房室阻滞","病态窦房结综合征"],"n":[105,3,0,0,1,1],"highrisk_other":2},"severity":{"labels":["高危","中危","低危"],"n":[2,107,16]},"swap":{"n":95,"pct":0.76},"cooc":{"labels":["其他未分类偏差","类型1：核心心律失常诊断错误或缺失","类型1：核心心律失常诊断错误或缺失差","类型10：原多诊断冗余错误","类型2：传导阻滞细化补充","类型3：新增ST-T相关改变","类型4：新增心电轴异常","类型5：新增或细化QRS低电压","类型6：新增异常Q波/R波递增不良","类型8：新增起搏器/起搏心律诊断","类型9：新增P波异常/U波等其他次要异常"],"J":[[1,0,0,0,0,0,0,0,0,0,0],[0,1,0,0.036765,0.175676,0.184834,0.095541,0.015625,0.111842,0.111111,0.127778],[0,0,1,0,0,0,0,0,0,0,0],[0,0.036765,0,1,0.080645,0.014184,0.031746,0,0.087719,0,0.103448],[0,0.175676,0,0.080645,1,0.106918,0.209877,0.018182,0.079545,0,0.131579],[0,0.184834,0,0.014184,0.106918,1,0.10828,0.03125,0.062112,0.007092,0.120219],[0,0.095541,0,0.031746,0.209877,0.10828,1,0.018868,0.094118,0,0.076271],[0,0.015625,0,0,0.018182,0.03125,0.018868,1,0.0625,0,0],[0,0.111842,0,0.087719,0.079545,0.062112,0.094118,0.0625,1,0,0.050847],[0,0.111111,0,0,0,0.007092,0,0,0,1,0.010638],[0,0.127778,0,0.103448,0.131579,0.120219,0.076271,0,0.050847,0.010638,1]]},"ptbxl":{"np":101,"scp_same_n":101,"scp_match_rate":1,"core_n":8,"core_disagree":0,"core_disagree_rate":0,"np_cc":100,"n_cc_diff":54,"cc_disagree_rate":0.54,"n_cc_na":1,"n_core_cc":8,"cc_disagree_core_rate":0.875},"cases":{"A":{"orig":"心律不明确；按需心室起搏；起搏器心律，不另行分析；异常心电图。","corr":"心脏起搏器 / 心房扑动 / 心室起搏心电图 / 室性期前收缩"},"B":{"orig":"AF(心房扑动) + AVB(房室传导阻滞) + TWC(T波改变)","corr":"心房扑动 / T波改变"},"D":{"orig":"IDC(室内差异传导) + SB(窦性心动过缓)","corr":"不确定是否室内差异传导？"}}};
+
+/* =================== 模块6 · 核心心律失常错误子集细化分析 =================== */
+const COOC_SHORT = {
+  "其他未分类偏差":"其他",
+  "类型1：核心心律失常诊断错误或缺失":"T1 核心心律失常",
+  "类型1：核心心律失常诊断错误或缺失差":"T1 核心心律失常*",
+  "类型10：原多诊断冗余错误":"T10 多诊断冗余",
+  "类型2：传导阻滞细化补充":"T2 传导阻滞细化",
+  "类型3：新增ST-T相关改变":"T3 ST-T改变",
+  "类型4：新增心电轴异常":"T4 心电轴异常",
+  "类型5：新增或细化QRS低电压":"T5 QRS低电压",
+  "类型6：新增异常Q波/R波递增不良":"T6 异常Q波",
+  "类型8：新增起搏器/起搏心律诊断":"T8 起搏心律",
+  "类型9：新增P波异常/U波等其他次要异常":"T9 P/U波异常"
+};
+let subScope = 'full';
+function subShort(l){ return COOC_SHORT[l] || l; }
+function cumAt(order,idx){ let c=0; for(let k=0;k<=idx;k++) c+=order[k][1]; return c; }
+
+function subData(){
+  if(subScope==='full') return {
+    n:SUB.subset.n_t1,
+    A:SUB.subset.abcd.A, B:SUB.subset.abcd.B, C:SUB.subset.abcd.C, D:SUB.subset.abcd.D,
+    miss:SUB.subset.miss, false:SUB.subset.false
+  };
+  return {
+    n:SUB.subset.n_pure,
+    A:SUB.subset.abcd_pure.A, B:SUB.subset.abcd_pure.B, C:SUB.subset.abcd_pure.C, D:SUB.subset.abcd_pure.D,
+    miss:SUB.subset.miss_pure, false:SUB.subset.false_pure
+  };
+}
+
+function renderSubKPI(){
+  const d=subData(), m=d.miss, f=d.false;
+  const tiles=[
+    ['pri',SUB.main.n,'主分析集 (例)'],
+    ['good',SUB.main.acc,'准确 (例)'],
+    ['bad',SUB.main.inacc,'不准确 (例)'],
+    ['acc',d.n,'类型01 子集 (例)'],
+    ['warn',fmtP(m.p),'漏标率 (子集内)'],
+    ['sky',fmtP(f.p),'误标率 (子集内)'],
+    ['grape',SUB.fisher.or.toFixed(2),'误标 vs 基线 OR']
+  ];
+  document.getElementById('sub-kpi').innerHTML=tiles.map(t=>
+    `<div class="tile ${t[0]}"><div class="v">${t[1]}</div><div class="l">${t[2]}</div></div>`).join('');
+  document.getElementById('sub-kpi-note').innerHTML=
+    `<b>数据集口径：</b>原文件共 ${SUB.main.tot} 例 = 274 准确 + 339 不准确 + ${SUB.main.und} 未判定；`+
+    `<b>主分析集 613 例</b>（${SUB.main.und} 例未判定已剔除；类型01 子集 125 例，占 ${(125/613*100).toFixed(1)}%）。`+
+    `<br>当前视图：<b>${d.n===SUB.subset.n_t1?'含类型01（n=125）':'纯类型01（n=37）'}</b>。`+
+    `漏标率 Wilson 95%CI [${ (m.lo*100).toFixed(1)}%, ${(m.hi*100).toFixed(1)}%]；误标率 [${ (f.lo*100).toFixed(1)}%, ${(f.hi*100).toFixed(1)}%]。`+
+    `对照 364 例不准确基线：漏标 ${(SUB.baseline.miss.p*100).toFixed(1)}% / 误标 ${(SUB.baseline.false.p*100).toFixed(1)}%`+
+    `（类型01 误标显著更高，Fisher OR=${SUB.fisher.or.toFixed(2)} [${SUB.fisher.lo.toFixed(2)}–${SUB.fisher.hi.toFixed(2)}], p=${SUB.fisher.p.toExponential(1)}）。`;
+}
+
+function renderSubABCD(){
+  const d=subData(), n=d.n;
+  const items=[
+    {label:'A 完全缺失',val:d.A,col:'#ff5757',
+      def:'<b>A 完全缺失</b>：真值核心心律失常的「临床等价族」在原始标注中完全未出现——患者存在的心律失常在报告中只字未提，临床风险最高。'},
+    {label:'B 类型混淆',val:d.B,col:'#ffd166',
+      def:'<b>B 类型混淆</b>：两族集合相等但同族内亚型不一致，如原始「心房扑动(AFL)」/ 真值「心房颤动(AFIB)」。本子集首要致因。'},
+    {label:'C 缺失+误标混合',val:d.C,col:'#4cc7ff',
+      def:'<b>C 缺失+误标混合</b>：同时存在缺失族与多余族。'},
+    {label:'D 误标/表述',val:d.D,col:'#c8a8ff',
+      def:'<b>D 误标/表述</b>：原始多出真值不含的核心族，或真值无核心族却被误标（含「主次不分/表述不规范」，需人工复核）。'}
+  ];
+  const svg=document.getElementById('sub-abcd'), W=560,H=300;
+  const mx=Math.max(d.A,d.B,d.C,d.D,1), padL=140,padR=90,padT=14,padB=14;
+  const bh=H-padT-padB, rowH=bh/items.length; let s='';
+  items.forEach((it,i)=>{const y=padT+i*rowH;const w=(it.val/mx)*(W-padL-padR);
+    const pct=(it.val/n*100).toFixed(1)+'%';
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12.5" fill="#f5efdc">${it.label}</text>`+
+    `<rect x="${padL}" y="${y+rowH*0.16}" width="${Math.max(w,1)}" height="${rowH*0.68}" rx="5" fill="${it.col}" opacity="0.9"/>`+
+    `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12" fill="#c2b89c" font-family="monospace">${it.val} (${pct})</text></g>`;});
+  svg.innerHTML=s;
+  svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{
+    g.style.cursor='pointer';
+    g.onclick=()=>{document.getElementById('sub-abcd-note').innerHTML=items[idx].def;};
+    g.onmousemove=e=>showTip(`<b>${items[idx].label}</b><br>病例数：${items[idx].val} / ${n}（${ (items[idx].val/n*100).toFixed(1)}%）`,e);
+    g.onmouseleave=hideTip;
+  });
+  const noteEl=document.getElementById('sub-abcd-note');
+  if(!noteEl.innerHTML) noteEl.innerHTML='点击任一柱条查看该错误子型的判定规则与临床含义。';
+}
+
+function renderSubDisease(){
+  const ds=SUB.disease, n=SUB.subset.n_t1;
+  const items=ds.labels.map((l,i)=>({label:l,val:ds.n[i],col:i===0?'#ff5757':'#ffb454'}));
+  const svg=document.getElementById('sub-disease'), W=560,H=300;
+  const mx=Math.max.apply(null,ds.n.concat([1])), padL=170,padR=60,padT=14,padB=14;
+  const bh=H-padT-padB, rowH=bh/items.length; let s='';
+  items.forEach((it,i)=>{const y=padT+i*rowH;const w=(it.val/mx)*(W-padL-padR);
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12" fill="#f5efdc">${it.label}</text>`+
+    `<rect x="${padL}" y="${y+rowH*0.18}" width="${Math.max(w,1)}" height="${rowH*0.64}" rx="5" fill="${it.col}" opacity="0.85"/>`+
+    `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12" fill="#c2b89c" font-family="monospace">${it.val}</text></g>`;});
+  svg.innerHTML=s;
+  svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{g.onmousemove=e=>showTip(`<b>${ds.labels[idx]}</b><br>真值病例数：${ds.n[idx]}`,e);g.onmouseleave=hideTip;});
+  document.getElementById('sub-disease-note').innerHTML=
+    `类型01 错误高度集中于<b>心房颤动/扑动（${ds.n[0]}/${n} = ${(ds.n[0]/n*100).toFixed(1)}%）</b>；`+
+    `其余高危病种（室速/室颤/高度AVB/病窦）合计仅 <b>${ds.highrisk_other}</b> 例，但单例漏诊代价极高。`;
+}
+
+function renderSubSeverity(){
+  const sv=SUB.severity, cols={'高危':'#ff5757','中危':'#ffd166','低危':'#5fe3a1'};
+  const items=sv.labels.map((l,i)=>({label:l,val:sv.n[i],col:cols[l]||'#ffb454'}));
+  const tot=sv.n.reduce((a,b)=>a+b,0);
+  const svg=document.getElementById('sub-sev'), W=560,H=280;
+  const mx=Math.max.apply(null,sv.n.concat([1])), padL=70,padR=40,padT=20,padB=30;
+  const bh=H-padT-padB, rowH=bh/items.length; let s='';
+  items.forEach((it,i)=>{const y=padT+i*rowH;const w=(it.val/mx)*(W-padL-padR);const pct=(it.val/tot*100).toFixed(1)+'%';
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="13" fill="${it.col}">${it.label}</text>`+
+    `<rect x="${padL}" y="${y+rowH*0.15}" width="${Math.max(w,1)}" height="${rowH*0.7}" rx="6" fill="${it.col}" opacity="0.85"/>`+
+    `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12.5" fill="#f5efdc" font-family="monospace">${it.val} (${pct})</text></g>`;});
+  svg.innerHTML=s;
+  svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{g.onmousemove=e=>showTip(`<b>${sv.labels[idx]}</b>：按临床决策影响分级<br>病例数 ${sv.n[idx]} / ${tot}`,e);g.onmouseleave=hideTip;});
+}
+
+function renderSubPareto(){
+  const d=subData();
+  const order=[['A',d.A],['B',d.B],['C',d.C],['D',d.D]].sort((a,b)=>b[1]-a[1]);
+  const svg=document.getElementById('sub-pareto'), W=560,H=280;
+  const padL=50,padR=50,padT=20,padB=40, bw=W-padL-padR, bh=H-padT-padB;
+  const mx=Math.max(d.A,d.B,d.C,d.D,1), n=d.n, step=bw/order.length;
+  const colmap={'A':'#ff5757','B':'#ffd166','C':'#4cc7ff','D':'#c8a8ff'};
+  let s=`<line x1="${padL}" y1="${padT+bh}" x2="${padL+bw}" y2="${padT+bh}" stroke="#3a4a6a"/>`;
+  order.forEach((o,i)=>{const x=padL+i*step+step*0.12, w=step*0.76, h=(o[1]/mx)*bh, y=padT+bh-h;
+    const cp=cumAt(order,i)/n;
+    s+=`<g data-i="${i}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${colmap[o[0]]}" opacity="0.9"/>`+
+    `<text x="${x+w/2}" y="${y-6}" font-size="12" fill="#f5efdc" text-anchor="middle" font-family="monospace">${o[1]}</text>`+
+    `<text x="${x+w/2}" y="${padT+bh+16}" font-size="12" fill="#c2b89c" text-anchor="middle">${o[0]}</text>`;
+    if(i>0) s+=`<line x1="${padL+(i-1)*step+step/2}" y1="${padT+bh-(cumAt(order,i-1)/n)*bh}" x2="${x+w/2}" y2="${padT+bh-cp*bh}" stroke="#ff7ab6" stroke-width="1.5"/>`;
+    s+=`<circle cx="${x+w/2}" cy="${padT+bh-cp*bh}" r="3.5" fill="#ff7ab6"/></g>`;});
+  svg.innerHTML=s;
+  svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{g.onmousemove=e=>{const o=order[idx];showTip(`<b>${o[0]} 类</b><br>病例数 ${o[1]}<br>累计占比 ${(cumAt(order,idx)/n*100).toFixed(1)}%`,e);};g.onmouseleave=hideTip;});
+}
+
+function renderSubCooc(){
+  const co=SUB.cooc, labs=co.labels.map(subShort), J=co.J, K=labs.length;
+  const svg=document.getElementById('sub-cooc'), W=1100,H=640;
+  const padL=180,padT=30,padR=20,padB=150, gw=W-padL-padR, gh=H-padT-padB;
+  const cs=gw/K, rs=gh/K;
+  function col(v){const t=clamp(v,0,1);
+    return `rgb(${Math.round(28+(255-28)*t)},${Math.round(31+(180-31)*t)},${Math.round(42+(84-42)*t)})`;}
+  let s='';
+  for(let i=0;i<K;i++)for(let j=0;j<K;j++){
+    const x=padL+j*cs, y=padT+i*rs, v=J[i][j];
+    const hl=(i===1||j===1||i===2||j===2);
+    s+=`<g data-i="${i}" data-j="${j}"><rect x="${x}" y="${y}" width="${cs-2}" height="${rs-2}" rx="3" fill="${col(v)}" ${hl?'stroke="#ff7ab6" stroke-width="1.5"':''}/>`+
+      `${v>0.08?`<text x="${x+cs/2}" y="${y+rs/2}" font-size="9.5" fill="${v>0.5?'#fff':'#c2b89c'}" text-anchor="middle">${v.toFixed(2)}</text>`:''}</g>`;
+  }
+  for(let i=0;i<K;i++){
+    s+=`<text x="${padL-6}" y="${padT+i*rs+rs/2}" font-size="10.5" fill="${i===1||i===2?'#ff7ab6':'#c2b89c'}" text-anchor="end">${labs[i]}</text>`;
+    const lx=padL+i*cs+cs/2, ly=padT+gh+14;
+    s+=`<text x="${lx}" y="${ly}" font-size="10.5" fill="${i===1||i===2?'#ff7ab6':'#c2b89c'}" text-anchor="middle" transform="rotate(35 ${lx} ${ly})">${labs[i]}</text>`;
+  }
+  svg.innerHTML=s;
+  svg.querySelectorAll('g[data-i]').forEach(g=>{g.onmousemove=e=>{const i=+g.dataset.i,j=+g.dataset.j;
+    showTip(`<b>${labs[i]}</b> × <b>${labs[j]}</b><br>Jaccard = ${J[i][j].toFixed(3)}`,e);};g.onmouseleave=hideTip;});
+  document.getElementById('sub-cooc-note').innerHTML=
+    '类型01（T1 核心心律失常，粉色描边）与 T2 传导阻滞细化、T3 ST-T改变、T8 起搏心律、T9 P/U波异常均存在可观共现（Jaccard&gt;0.1）——核心心律失常错误很少孤立出现，质控应对<b>复合偏差组合</b>做联合培训。';
+}
+
+function renderSubPTBXL(){
+  const p=SUB.ptbxl, d=subData();
+  const tiles=[
+    ['pri',p.np,'双阅 ECG 对'],
+    ['good','100%','结构码一致率'],
+    ['acc','0%','核心 SCP 分歧率'],
+    ['bad',fmtP(p.cc_disagree_rate),'判定(准/不准)分歧率'],
+    ['warn',fmtP(p.cc_disagree_core_rate),'核心对判定分歧率']
+  ];
+  document.getElementById('sub-ptbxl').innerHTML=tiles.map(t=>
+    `<div class="tile ${t[0]}"><div class="v">${t[1]}</div><div class="l">${t[2]}</div></div>`).join('');
+  const items=[
+    {label:'宁波 类型01 误标率',val:d.false.p,col:'#ff5757'},
+    {label:'PTB-XL 结构码一致率',val:1,col:'#5fe3a1'},
+    {label:'PTB-XL 判定分歧率',val:p.cc_disagree_rate,col:'#ffd166'},
+    {label:'PTB-XL 核心对判定分歧率',val:p.cc_disagree_core_rate,col:'#ff7ab6'}
+  ];
+  const svg=document.getElementById('sub-ptbxl-bar'), W=1100,H=240;
+  const padL=240,padR=80,padT=14,padB=14, bh=H-padT-padB, rowH=bh/items.length; let s='';
+  items.forEach((it,i)=>{const y=padT+i*rowH;const w=it.val*(W-padL-padR);
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12.5" fill="#f5efdc">${it.label}</text>`+
+    `<rect x="${padL}" y="${y+rowH*0.16}" width="${Math.max(w,2)}" height="${rowH*0.68}" rx="5" fill="${it.col}" opacity="0.88"/>`+
+    `<text x="${padL+Math.max(w,2)+8}" y="${y+rowH/2}" font-size="12" fill="#c2b89c" font-family="monospace">${(it.val*100).toFixed(1)}%</text></g>`;});
+  svg.innerHTML=s;
+  svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{g.onmousemove=e=>showTip(`<b>${items[idx].label}</b><br>${(items[idx].val*100).toFixed(1)}%`,e);g.onmouseleave=hideTip;});
+  document.getElementById('sub-ptbxl-note').innerHTML=
+    `PTB-XL 两位专科医师对心律失常<b>结构码本身</b>一致率 100%（${p.core_disagree}/${p.core_n} 对核心心律失常均一致），`+
+    `分歧只发生在「判准/判不准」的<b>阈值极性</b>层面（判定分歧率 ${(p.cc_disagree_rate*100).toFixed(0)}%）。`+
+    `反衬宁波类型01 错误以 <b>AFL→AFIB 亚型混淆（${SUB.swap.n} 例）</b> 与漏标/误标为主，更可能源于<b>本地标注流水线（自动模板将 AF 码映射为心房扑动 + 单人复核缺位）</b>，而非医师无法识别——可通过统一码本 + 强制复核低成本消除。`;
+}
+
+function renderSubAttr(){
+  const A=SUB.subset.abcd.A, D=SUB.subset.abcd.D, n=SUB.subset.n_t1;
+  const swapPct=(SUB.swap.pct*100).toFixed(1)+'%';
+  const humanPct=((A+D)/n*100).toFixed(1)+'%';
+  const rows=[
+    ['数据采集因素','明细未含信号质量字段；主集含 lead_time / image 需另行提取','缺口','缺口 · 需补信号质量'],
+    ['算法/系统因素',SUB.swap.n+' 例 AFL→AFIB 亚型误判，根因指向码本将 AF 码映射为「心房扑动」的模板约定',swapPct,'强证据'],
+    ['人为审核因素',A+' 例完全缺失(A类) + '+D+' 例多余核心(D类) 反映医师审核遗漏/术语习惯',humanPct,'中等证据']
+  ];
+  let h='<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
+  h+='<tr style="color:#c2b89c;text-align:left;"><th style="padding:6px 8px;border-bottom:1px solid var(--line)">归因层</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">可推断证据</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">估计占比</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">证据强度</th></tr>';
+  rows.forEach(r=>{h+=`<tr><td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:var(--pri);font-weight:600;vertical-align:top">${r[0]}</td>`+
+    `<td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:#f5efdc;line-height:1.5;vertical-align:top">${r[1]}</td>`+
+    `<td style="padding:6px 8px;border-bottom:1px dashed var(--line);font-family:monospace;color:var(--warn);vertical-align:top">${r[2]}</td>`+
+    `<td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:#c2b89c;vertical-align:top">${r[3]}</td></tr>`;});
+  h+='</table>';
+  document.getElementById('sub-attr').innerHTML=h;
+}
+
+function renderSubCases(){
+  const c=SUB.cases;
+  const rows=[['A 完全缺失',c.A],['B 类型混淆',c.B],['D 误标/表述',c.D]];
+  let h='<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
+  h+='<tr style="color:#c2b89c;text-align:left;"><th style="padding:6px 8px;border-bottom:1px solid var(--line)">子型</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">原始标注</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">专家回看</th></tr>';
+  rows.forEach(r=>{h+=`<tr><td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:var(--pri);font-weight:600;white-space:nowrap;vertical-align:top">${r[0]}</td>`+
+    `<td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:#ffb0b0;font-family:monospace;font-size:12px;vertical-align:top">${r[1].orig}</td>`+
+    `<td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:#a8f0c8;font-family:monospace;font-size:12px;vertical-align:top">${r[1].corr}</td></tr>`;});
+  h+='</table>';
+  document.getElementById('sub-cases').innerHTML=h;
+}
+
+function renderSubRecs(){
+  const items=[
+    `统一房性快速心律失常码本（首要，针对 B 类 / ${SUB.swap.n} 例）：将数据库中 AF 码的标准命名锁定为「心房颤动」，标注界面强制弹出 AFL/AFIB 鉴别提示，可一次性消除占比最大的亚型混淆。`,
+    `核心心律失常强制复核清单（针对 A 类 / ${SUB.subset.abcd.A} 例）：在报告生成环节对 AF/AFL、VT/VF、高度 AVB、病窦等高危病种加入「是否已在结论中体现」的强制勾选校验。`,
+    `补全数据采集层信号质量字段（针对归因缺口）：在标注系统记录 lead_time、导联脱落、记录时长，使数据层致因可量化，形成完整「数据→算法→人为」三层归因闭环。`
+  ];
+  document.getElementById('sub-recs').innerHTML=items.map(t=>`<li style="margin:8px 0;line-height:1.7;color:#f5efdc">${t}</li>`).join('');
+}
+
+function renderSubAll(){
+  renderSubKPI(); renderSubABCD(); renderSubDisease(); renderSubSeverity();
+  renderSubPareto(); renderSubCooc(); renderSubPTBXL(); renderSubAttr(); renderSubCases(); renderSubRecs();
+}
+
+function subWire(){
+  document.getElementById('sub-full').onclick=()=>{
+    subScope='full';
+    document.getElementById('sub-full').classList.add('on');
+    document.getElementById('sub-pure').classList.remove('on');
+    renderSubKPI(); renderSubABCD(); renderSubPareto();
+  };
+  document.getElementById('sub-pure').onclick=()=>{
+    subScope='pure';
+    document.getElementById('sub-pure').classList.add('on');
+    document.getElementById('sub-full').classList.remove('on');
+    renderSubKPI(); renderSubABCD(); renderSubPareto();
+  };
+}
+subWire();
+
+
+pdInit('Ningbo');
+</script>
+</body>
+</html>
