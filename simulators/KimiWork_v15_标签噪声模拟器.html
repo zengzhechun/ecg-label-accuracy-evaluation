@@ -2650,9 +2650,9 @@ function renderErrBars(){
   data.forEach((d,i)=>{const y=top+i*rowH;const w=(defs[i]/mx)*(W-180);
     const col=i===0?'#ff7a7a':'#ffb454';
     s+=`<g data-t="${encodeURIComponent(d.type)}" data-n="${defs[i]}">
-      <text x="0" y="${y+14}" font-size="11.5" fill="#f5efdc">${d.type.replace('类型','').slice(0,16)}</text>
+      <text x="0" y="${y+14}" font-size="11.5" fill="var(--ink)">${d.type.replace('类型','').slice(0,16)}</text>
       <rect x="150" y="${y+2}" width="${Math.max(w,1)}" height="16" rx="5" fill="${col}" opacity="0.85"/>
-      <text x="${152+Math.max(w,1)+6}" y="${y+15}" font-size="12" fill="#f5efdc" font-family="monospace">${defs[i]}</text></g>`;});
+      <text x="${152+Math.max(w,1)+6}" y="${y+15}" font-size="12" fill="var(--ink)" font-family="monospace">${defs[i]}</text></g>`;});
   svg.innerHTML=s;
   svg.querySelectorAll('g[data-t]').forEach(g=>g.onmousemove=e=>showTip(
     `<b>${decodeURIComponent(g.dataset.t)}</b><br>计数：${g.dataset.n} 条`,e));
@@ -2668,11 +2668,11 @@ function renderScatter(){
   let s=`<line x1="${px}" y1="${py+bh}" x2="${px+bw}" y2="${py+bh}" stroke="#3a4a6a"/>`;
   s+=`<line x1="${px}" y1="${py}" x2="${px}" y2="${py+bh}" stroke="#3a4a6a"/>`;
   for(let i=0;i<=9;i++){const gx=px+bw*i/9;s+=`<line x1="${gx}" y1="${py}" x2="${gx}" y2="${py+bh}" stroke="#1c2740"/>`;
-    s+=`<text x="${gx}" y="${py+bh+16}" font-size="9.5" fill="#aea796" text-anchor="middle">${(i*10)}%</text>`;}
+    s+=`<text x="${gx}" y="${py+bh+16}" font-size="9.5" fill="var(--dim)" text-anchor="middle">${(i*10)}%</text>`;}
   for(let i=0;i<=9;i++){const gy=py+bh-i*bh/9;s+=`<line x1="${px}" y1="${gy}" x2="${px+bw}" y2="${gy}" stroke="#1c2740"/>`;
-    s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="#aea796" text-anchor="end">${(i*10)}%</text>`;}
-  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="#aea796" text-anchor="middle">漏标率 qfn（越右越漏）</text>`;
-  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="#aea796" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">误标率 FDR（越上越乱）</text>`;
+    s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="var(--dim)" text-anchor="end">${(i*10)}%</text>`;}
+  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="var(--dim)" text-anchor="middle">漏标率 qfn（越右越漏）</text>`;
+  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="var(--dim)" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">误标率 FDR（越上越乱）</text>`;
   dx.forEach(d=>{const cx=X(d.qfn_dx),cy=Y(d.fdr_dx);const r=4+Math.sqrt(d.burden)/3.2;
     const col=d.sev===5?'#ff7a7a':d.sev===3?'#ffd166':'#ffb454';
     s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}" opacity="0.62" stroke="${col}" stroke-width="1"
@@ -2691,34 +2691,34 @@ function renderDxTable(){
   else if(dxSort==='fdr') all.sort((a,b)=>(b.fdr_dx||-1)-(a.fdr_dx||-1));
   const rowH=(H-32)/all.length;let s='';
   const cols=[['诊断标签',14,200],['漏标率 qfn',330,250],['误标率 FDR',620,250],['临床负担',920,140]];
-  cols.forEach(c=>s+=`<text x="${c[1]}" y="18" font-size="12" fill="#aea796">${c[0]}</text>`);
+  cols.forEach(c=>s+=`<text x="${c[1]}" y="18" font-size="12" fill="var(--dim)">${c[0]}</text>`);
   s+=`<line x1="10" y1="24" x2="${W-10}" y2="24" stroke="#3a4a6a"/>`;
   all.forEach((d,i)=>{const y=30+i*rowH;const qfnV=d.qfn_dx==null?null:d.qfn_dx;const fdrV=d.fdr_dx==null?null:d.fdr_dx;
     const qw=qfnV==null?0:(clamp(qfnV,0,0.95)/0.95)*230;
     const fw=fdrV==null?0:(clamp(fdrV,0,0.95)/0.95)*230;
     const col=d.sev===5?'#ff7a7a':d.sev===3?'#ffd166':'#ffb454';
-    s+=`<text x="14" y="${y+rowH/2+4}" font-size="11.5" fill="#f5efdc">${d.unit}</text>`;
+    s+=`<text x="14" y="${y+rowH/2+4}" font-size="11.5" fill="var(--ink)">${d.unit}</text>`;
     s+=`<rect x="330" y="${y+rowH/2-6}" width="230" height="12" rx="4" fill="#1c2740"/>`;
     if(qfnV!=null) s+=`<rect x="330" y="${y+rowH/2-6}" width="${qw}" height="12" rx="4" fill="${col}" opacity="0.85"/>`;
-    s+=`<text x="568" y="${y+rowH/2+4}" font-size="10.5" fill="#f5efdc" font-family="monospace">${qfnV==null?'—':fmtP(qfnV)}</text>`;
+    s+=`<text x="568" y="${y+rowH/2+4}" font-size="10.5" fill="var(--ink)" font-family="monospace">${qfnV==null?'—':fmtP(qfnV)}</text>`;
     s+=`<rect x="620" y="${y+rowH/2-6}" width="230" height="12" rx="4" fill="#1c2740"/>`;
     if(fdrV!=null) s+=`<rect x="620" y="${y+rowH/2-6}" width="${fw}" height="12" rx="4" fill="${col}" opacity="0.6"/>`;
-    s+=`<text x="858" y="${y+rowH/2+4}" font-size="10.5" fill="#f5efdc" font-family="monospace">${fdrV==null?'—':fmtP(fdrV)}</text>`;
-    s+=`<text x="920" y="${y+rowH/2+4}" font-size="11" fill="#aea796" font-family="monospace">${d.burden.toFixed(1)}</text>`;});
+    s+=`<text x="858" y="${y+rowH/2+4}" font-size="10.5" fill="var(--ink)" font-family="monospace">${fdrV==null?'—':fmtP(fdrV)}</text>`;
+    s+=`<text x="920" y="${y+rowH/2+4}" font-size="11" fill="var(--dim)" font-family="monospace">${d.burden.toFixed(1)}</text>`;});
   svg.innerHTML=s;
 }
 function renderOov(){
   const svg=document.getElementById('oov-bars');const W=1100,H=560;
   const data=DATA.oov;const mx=Math.max(...data.map(d=>d.n));
   const rowH=Math.min(20,(H-32)/data.length);let s='';
-  s+=`<text x="14" y="16" font-size="11.5" fill="#aea796">OOV 词汇</text>`;
-  s+=`<text x="780" y="16" font-size="11.5" fill="#aea796">出现行数</text>`;
+  s+=`<text x="14" y="16" font-size="11.5" fill="var(--dim)">OOV 词汇</text>`;
+  s+=`<text x="780" y="16" font-size="11.5" fill="var(--dim)">出现行数</text>`;
   s+=`<line x1="10" y1="22" x2="${W-10}" y2="22" stroke="#3a4a6a"/>`;
   data.forEach((d,i)=>{const y=28+i*rowH;const w=(d.n/mx)*(W-200);
     const col=d.n>=20?'#ff7a7a':d.n>=10?'#ffd166':'#ffb454';
-    s+=`<text x="14" y="${y+rowH/2+4}" font-size="11.5" fill="#f5efdc">${d.term}</text>`;
+    s+=`<text x="14" y="${y+rowH/2+4}" font-size="11.5" fill="var(--ink)">${d.term}</text>`;
     s+=`<rect x="180" y="${y+2}" width="${Math.max(w,2)}" height="${rowH-6}" rx="4" fill="${col}" opacity="0.85"/>`;
-    s+=`<text x="${182+Math.max(w,2)+6}" y="${y+rowH/2+4}" font-size="11" fill="#f5efdc" font-family="monospace">${d.n}</text>`;});
+    s+=`<text x="${182+Math.max(w,2)+6}" y="${y+rowH/2+4}" font-size="11" fill="var(--ink)" font-family="monospace">${d.n}</text>`;});
   svg.innerHTML=s;
   const totRows=data.reduce((a,b)=>a+b.n,0);
   document.getElementById('oov-note').innerHTML=
@@ -2732,8 +2732,8 @@ function renderCoocHeat(){
   const pl=180,pr=20,pt=20,pb=20;const cw=(W-pl-pr)/adds.length,ch=(H-pt-pb)/dels.length;
   let s='';
   // 轴标签
-  adds.forEach((a,j)=>{const x=pl+j*cw+cw/2;s+=`<text x="${x}" y="${H-4}" font-size="10" fill="#aea796" text-anchor="middle" transform="rotate(-30 ${x} ${H-4})">${a}</text>`;});
-  dels.forEach((d,i)=>{const y=pt+i*ch+ch/2+3;s+=`<text x="${pl-6}" y="${y}" font-size="10.5" fill="#aea796" text-anchor="end">${d}</text>`;});
+  adds.forEach((a,j)=>{const x=pl+j*cw+cw/2;s+=`<text x="${x}" y="${H-4}" font-size="10" fill="var(--dim)" text-anchor="middle" transform="rotate(-30 ${x} ${H-4})">${a}</text>`;});
+  dels.forEach((d,i)=>{const y=pt+i*ch+ch/2+3;s+=`<text x="${pl-6}" y="${y}" font-size="10.5" fill="var(--dim)" text-anchor="end">${d}</text>`;});
   // 格子
   for(let i=0;i<dels.length;i++) for(let j=0;j<adds.length;j++){
     const n=map.get(dels[i]+'|'+adds[j])||0;
@@ -2746,7 +2746,7 @@ function renderCoocHeat(){
       data-d="${encodeURIComponent(dels[i])}" data-a="${encodeURIComponent(adds[j])}" data-n="${n}"/>`;
     if(n>=8) s+=`<text x="${x+cw/2}" y="${y+ch/2+3.5}" font-size="9.5" fill="#1f2a3a" font-family="monospace" text-anchor="middle" font-weight="700">${n}</text>`;
   }
-  s+=`<text x="14" y="14" font-size="11" fill="#aea796">纵轴 = 数据库被删标签（前 15 位） · 横轴 = 专家新增标签（前 15 位） · 颜色=共现次数</text>`;
+  s+=`<text x="14" y="14" font-size="11" fill="var(--dim)">纵轴 = 数据库被删标签（前 15 位） · 横轴 = 专家新增标签（前 15 位） · 颜色=共现次数</text>`;
   svg.innerHTML=s;
   svg.querySelectorAll('rect[data-n]').forEach(r=>r.onmousemove=e=>showTip(
     `<b>${decodeURIComponent(r.dataset.d)}</b> → <b>${decodeURIComponent(r.dataset.a)}</b><br>共现 <b style="color:var(--bad)">${r.dataset.n}</b> 次`,e));
@@ -2854,14 +2854,14 @@ function renderDeriveLab(){
   const drawBox=(cx,cy,w,h,label,sub,col,count)=>{
     return `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="10" fill="rgba(56,62,80,0.6)" stroke="${col}" stroke-width="2"/>
       <text x="${cx}" y="${cy-12}" text-anchor="middle" font-size="13" font-weight="700" fill="${col}">${label}</text>
-      <text x="${cx}" y="${cy+8}" text-anchor="middle" font-size="11" fill="#c2b89c">${sub}</text>
+      <text x="${cx}" y="${cy+8}" text-anchor="middle" font-size="11" fill="var(--dim)">${sub}</text>
       <text x="${cx}" y="${cy+30}" text-anchor="middle" font-size="14" font-family="monospace" font-weight="700" fill="${col}">${count}</text>`;
   };
   const drawCell=(cx,cy,w,h,label,count,col,sub)=>{
     return `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="6" fill="${col}" opacity="0.18" stroke="${col}" stroke-width="1.5"/>
       <text x="${cx}" y="${cy-3}" text-anchor="middle" font-size="11" font-weight="700" fill="${col}">${label}</text>
-      <text x="${cx}" y="${cy+13}" text-anchor="middle" font-size="11" font-family="monospace" fill="#f5efdc">${count}</text>
-      ${sub?`<text x="${cx}" y="${cy+27}" text-anchor="middle" font-size="9" fill="#c2b89c">${sub}</text>`:''}`;
+      <text x="${cx}" y="${cy+13}" text-anchor="middle" font-size="11" font-family="monospace" fill="var(--ink)">${count}</text>
+      ${sub?`<text x="${cx}" y="${cy+27}" text-anchor="middle" font-size="9" fill="var(--dim)">${sub}</text>`:''}`;
   };
   // 列：3 列；每列两行（Y/N），中间层是模型预测 (1/0)
   // 假金标准分布：Y_strict(1-qfn)×Npos, N_strict = qfn×Npos + (1-fdr)×Nneg (误阴=被漏掉的真阳 + 正确标记的真阴)
@@ -2891,10 +2891,10 @@ function renderDeriveLab(){
   s+=drawCell(920,55,140,40,'专家=阳 (Y)',fmtN(Npos),'#5fe3a1',`真实阳性`);
   // 内部细分：假金标准 Y 行内，TP_a vs FN_a
   s+=drawCell(40,100,75,32,'TP_a',fmtN(TP_a),'#ffb454','');
-  s+=`<text x="78" y="105" text-anchor="middle" font-size="10" fill="#c2b89c">∪</text>`;
+  s+=`<text x="78" y="105" text-anchor="middle" font-size="10" fill="var(--dim)">∪</text>`;
   s+=drawCell(120,100,75,32,'FN_a',fmtN(FN_a),'#ff5757','');
   s+=`<line x1="40" y1="115" x2="120" y2="115" stroke="#ffb454" stroke-width="0.5"/>`;
-  s+=`<text x="80" y="135" text-anchor="middle" font-size="9" fill="#7c7563">Se_app=${S.se_app.toFixed(2)}</text>`;
+  s+=`<text x="80" y="135" text-anchor="middle" font-size="9" fill="var(--dim2)">Se_app=${S.se_app.toFixed(2)}</text>`;
   // 中间：TP_a, FP_a, FN_a, TN_a
   s+=drawCell(490,100,75,32,'TP_a',fmtN(TP_a),'#ffb454','');
   s+=drawCell(610,100,75,32,'FP_a',fmtN(FP_a),'#ff5757','');
@@ -2903,7 +2903,7 @@ function renderDeriveLab(){
   s+=drawCell(900,100,75,32,'TP_t',fmtN(TP_t),'#5fe3a1','');
   s+=drawCell(980,100,75,32,'FN_t',fmtN(FN_t),'#ff5757','');
   s+=`<line x1="900" y1="115" x2="980" y2="115" stroke="#5fe3a1" stroke-width="0.5"/>`;
-  s+=`<text x="940" y="135" text-anchor="middle" font-size="9" fill="#7c7563">Se_真=${a.se_t.toFixed(2)}</text>`;
+  s+=`<text x="940" y="135" text-anchor="middle" font-size="9" fill="var(--dim2)">Se_真=${a.se_t.toFixed(2)}</text>`;
   // 第二行：N / 预测=0 / N
   s+=`<line x1="170" y1="195" x2="450" y2="195" stroke="#ff7ab6" stroke-width="1.5" stroke-dasharray="4,3"/>`;
   s+=drawCell(100,195,140,40,'DB 标签=阴 (N)',fmtN(db_neg_count),'#ffb454',`=真阴×${(1-S.fdr).toFixed(2)} + 漏报${S.qfn.toFixed(2)}`);
@@ -2913,14 +2913,14 @@ function renderDeriveLab(){
   s+=drawCell(40,240,75,32,'TN_a',fmtN(TN_a),'#5fe3a1','');
   s+=drawCell(120,240,75,32,'FP_a',fmtN(FP_a),'#ff5757','');
   s+=`<line x1="40" y1="255" x2="120" y2="255" stroke="#ffb454" stroke-width="0.5"/>`;
-  s+=`<text x="80" y="252" text-anchor="middle" font-size="9" fill="#7c7563" dy="-2">Sp_app=${S.sp_app.toFixed(2)}</text>`;
+  s+=`<text x="80" y="252" text-anchor="middle" font-size="9" fill="var(--dim2)" dy="-2">Sp_app=${S.sp_app.toFixed(2)}</text>`;
   s+=drawCell(490,240,75,32,'FN_a',fmtN(FN_a),'#ff5757','');
   s+=drawCell(610,240,75,32,'TN_a',fmtN(TN_a),'#5fe3a1','');
   s+=`<line x1="490" y1="255" x2="610" y2="255" stroke="#ff7ab6" stroke-width="0.5"/>`;
   s+=drawCell(900,240,75,32,'FP_t',fmtN(FP_t),'#ff5757','');
   s+=drawCell(980,240,75,32,'TN_t',fmtN(TN_t),'#5fe3a1','');
   s+=`<line x1="900" y1="255" x2="980" y2="255" stroke="#5fe3a1" stroke-width="0.5"/>`;
-  s+=`<text x="940" y="252" text-anchor="middle" font-size="9" fill="#7c7563" dy="-2">Sp_真=${a.sp_t.toFixed(2)}</text>`;
+  s+=`<text x="940" y="252" text-anchor="middle" font-size="9" fill="var(--dim2)" dy="-2">Sp_真=${a.sp_t.toFixed(2)}</text>`;
   // 箭头定义
   s+=`<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff7ab6"/></marker>
     <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5fe3a1"/></marker></defs>`;
@@ -3030,7 +3030,7 @@ function renderRadar(){
     const ax=lx>R*1.06?cx+labR*Math.cos(ang[i]):(lx<cx-R*1.06?cx-labR*Math.cos(ang[i])-0:cx+labR*Math.cos(ang[i]));
     const ay=cy+labR*Math.sin(ang[i]);
     const anchor=(Math.cos(ang[i])>0.3?'start':Math.cos(ang[i])<-0.3?'end':'middle');
-    s+=`<text x="${ax}" y="${ay}" font-size="12" fill="#aea796" text-anchor="${anchor}" dy="${Math.sin(ang[i])>0.3?12:-4}">${k}</text>`;
+    s+=`<text x="${ax}" y="${ay}" font-size="12" fill="var(--dim)" text-anchor="${anchor}" dy="${Math.sin(ang[i])>0.3?12:-4}">${k}</text>`;
     // 三个数值
     const [pxA,pyA]=pt(a.app[k],i),[pxT,pyT]=pt(a.tru[k],i),[pxD,pyD]=pt(a.att[k],i);
     s+=`<circle cx="${pxA}" cy="${pyA}" r="3.5" fill="#ff7ab6" stroke="#fff" stroke-width="0.8"/>`;
@@ -3107,7 +3107,7 @@ function renderM3(){
   const order=['Se','Sp','PPV','NPV','F1','AUC'];const W=720,H=380,px=58,bw=W-px-26,rowH=(H-50)/order.length;
   let s='';
   // 顶部说明
-  s+=`<text x="${px}" y="14" font-size="11" fill="#c2b89c">每行：左柱<tspan fill="#ff7ab6" font-weight="700"> 账面（假金标准）</tspan> · 右柱<tspan fill="#5fe3a1" font-weight="700"> 真金标准</tspan> · 右侧<tspan fill="#ff5757" font-weight="700"> −衰减</tspan></text>`;
+  s+=`<text x="${px}" y="14" font-size="11" fill="var(--dim)">每行：左柱<tspan fill="#ff7ab6" font-weight="700"> 账面（假金标准）</tspan> · 右柱<tspan fill="#5fe3a1" font-weight="700"> 真金标准</tspan> · 右侧<tspan fill="#ff5757" font-weight="700"> −衰减</tspan></text>`;
   order.forEach((k,i)=>{
     const y=22+i*rowH;
     const wA=(clamp(a.app[k],0,1))*bw;const wT=(clamp(a.tru[k],0,1))*bw;
@@ -3116,7 +3116,7 @@ function renderM3(){
     const wAa=Math.min(wA,halfW); const wTt=Math.min(wT,halfW);
     const baseY=y+4;
     // 行标签（左侧固定区）
-    s+=`<text x="${px-8}" y="${baseY+11}" font-size="11.5" fill="#f5efdc" text-anchor="end" font-weight="600">${k}</text>`;
+    s+=`<text x="${px-8}" y="${baseY+11}" font-size="11.5" fill="var(--ink)" text-anchor="end" font-weight="600">${k}</text>`;
     // 背景轨（淡蓝灰）
     s+=`<rect x="${px}" y="${baseY}" width="${halfW}" height="22" rx="5" fill="#1c2740" stroke="#3a4a6a" stroke-width="0.5"/>`;
     s+=`<rect x="${px+halfW+10}" y="${baseY}" width="${halfW}" height="22" rx="5" fill="#1c2740" stroke="#3a4a6a" stroke-width="0.5"/>`;
@@ -3285,14 +3285,14 @@ function renderM4(){
   s+=`<text x="${px+bw-4}" y="${Y(clean-delta)-5}" font-size="10.5" fill="#ffd166" text-anchor="end">安全下限 ${((clean-delta)).toFixed(2)}</text>`;
   s+=`<line x1="${X(qmax)}" y1="${py}" x2="${X(qmax)}" y2="${py+bh}" stroke="#5fe3a1" stroke-dasharray="4,3"/>`;
   s+=`<text x="${X(qmax)}" y="${py+12}" font-size="10.5" fill="#5fe3a1" text-anchor="middle">qfn_max ${fmtP(qmax)}</text>`;
-  s+=`<line x1="${X(M.qfn_s)}" y1="${py}" x2="${py+bh}" x2="${X(M.qfn_s)}" stroke="#ffffff" stroke-width="1.6" stroke-dasharray="6,4" opacity="0.85"/>`;
+  s+=`<line x1="${X(M.qfn_s)}" y1="${py}" x2="${py+bh}" x2="${X(M.qfn_s)}" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="6,4" opacity="0.85"/>`;
   s+=`<text x="${X(M.qfn_s)}" y="${py+bh+16}" font-size="10.5" fill="#fff" text-anchor="middle">实证 ${fmtP(M.qfn_s)}</text>`;
   s+=`<line x1="${px}" y1="${py+bh}" x2="${px+bw}" y2="${py+bh}" stroke="#3a4a6a"/>`;
   s+=`<line x1="${px}" y1="${py}" x2="${px}" y2="${py+bh}" stroke="#3a4a6a"/>`;
-  for(let i=0;i<=5;i++){const gx=px+bw*i/5;s+=`<text x="${gx}" y="${py+bh+16}" font-size="9.5" fill="#aea796" text-anchor="middle">${(i*10)}%</text>`;}
-  for(let i=0;i<=4;i++){const gy=py+bh-i*bh/4;s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="#aea796" text-anchor="end">${i/4}</text>`;}
-  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="#aea796" text-anchor="middle">数据库漏标率 qfn</text>`;
-  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="#aea796" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">真金标准 ${metric}</text>`;
+  for(let i=0;i<=5;i++){const gx=px+bw*i/5;s+=`<text x="${gx}" y="${py+bh+16}" font-size="9.5" fill="var(--dim)" text-anchor="middle">${(i*10)}%</text>`;}
+  for(let i=0;i<=4;i++){const gy=py+bh-i*bh/4;s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="var(--dim)" text-anchor="end">${i/4}</text>`;}
+  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="var(--dim)" text-anchor="middle">数据库漏标率 qfn</text>`;
+  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="var(--dim)" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">真金标准 ${metric}</text>`;
   svg.innerHTML=s;
   const ratio=M.qfn_s/qmax;
   document.getElementById('m4-kpi').innerHTML=
@@ -3317,10 +3317,10 @@ function renderCPlot(){
   s+=`<line x1="${px}" y1="${Y(M.qfn_s)}" x2="${px+bw}" y2="${Y(M.qfn_s)}" stroke="#ff7a7a" stroke-dasharray="5,4" opacity="0.6"/>`;
   s+=`<line x1="${px}" y1="${py+bh}" x2="${px+bw}" y2="${py+bh}" stroke="#3a4a6a"/>`;
   s+=`<line x1="${px}" y1="${py}" x2="${px}" y2="${py+bh}" stroke="#3a4a6a"/>`;
-  for(let i=0;i<=5;i++){const gx=px+bw*i/5;s+=`<text x="${gx}" y="${py+bh+16}" font-size="10" fill="#aea796" text-anchor="middle">${(0.5+i*0.1).toFixed(1)}</text>`;}
-  for(let i=0;i<=5;i++){const gy=py+bh-i*bh/5;s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="#aea796" text-anchor="end">${(i*10)}%</text>`;}
-  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="#aea796" text-anchor="middle">模型能力 c</text>`;
-  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="#aea796" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">qfn_max（可容忍漏标率）</text>`;
+  for(let i=0;i<=5;i++){const gx=px+bw*i/5;s+=`<text x="${gx}" y="${py+bh+16}" font-size="10" fill="var(--dim)" text-anchor="middle">${(0.5+i*0.1).toFixed(1)}</text>`;}
+  for(let i=0;i<=5;i++){const gy=py+bh-i*bh/5;s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="var(--dim)" text-anchor="end">${(i*10)}%</text>`;}
+  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="var(--dim)" text-anchor="middle">模型能力 c</text>`;
+  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="var(--dim)" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">qfn_max（可容忍漏标率）</text>`;
   svg.innerHTML=s;
 }
 function bindM4(id,key,disp,fmt){const el=document.getElementById(id);
@@ -3683,9 +3683,9 @@ function renderSubABCD(){
   const bh=H-padT-padB, rowH=bh/items.length; let s='';
   items.forEach((it,i)=>{const y=padT+i*rowH;const w=(it.val/mx)*(W-padL-padR);
     const pct=(it.val/n*100).toFixed(1)+'%';
-    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12.5" fill="#f5efdc">${it.label}</text>`+
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12.5" fill="var(--ink)">${it.label}</text>`+
     `<rect x="${padL}" y="${y+rowH*0.16}" width="${Math.max(w,1)}" height="${rowH*0.68}" rx="5" fill="${it.col}" opacity="0.9"/>`+
-    `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12" fill="#c2b89c" font-family="monospace">${it.val} (${pct})</text></g>`;});
+    `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12" fill="var(--dim)" font-family="monospace">${it.val} (${pct})</text></g>`;});
   svg.innerHTML=s;
   svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{
     g.style.cursor='pointer';
@@ -3704,9 +3704,9 @@ function renderSubDisease(){
   const mx=Math.max.apply(null,ds.n.concat([1])), padL=170,padR=60,padT=14,padB=14;
   const bh=H-padT-padB, rowH=bh/items.length; let s='';
   items.forEach((it,i)=>{const y=padT+i*rowH;const w=(it.val/mx)*(W-padL-padR);
-    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12" fill="#f5efdc">${it.label}</text>`+
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12" fill="var(--ink)">${it.label}</text>`+
     `<rect x="${padL}" y="${y+rowH*0.18}" width="${Math.max(w,1)}" height="${rowH*0.64}" rx="5" fill="${it.col}" opacity="0.85"/>`+
-    `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12" fill="#c2b89c" font-family="monospace">${it.val}</text></g>`;});
+    `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12" fill="var(--dim)" font-family="monospace">${it.val}</text></g>`;});
   svg.innerHTML=s;
   svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{g.onmousemove=e=>showTip(`<b>${ds.labels[idx]}</b><br>真值病例数：${ds.n[idx]}`,e);g.onmouseleave=hideTip;});
   document.getElementById('sub-disease-note').innerHTML=
@@ -3724,7 +3724,7 @@ function renderSubSeverity(){
   items.forEach((it,i)=>{const y=padT+i*rowH;const w=(it.val/mx)*(W-padL-padR);const pct=(it.val/tot*100).toFixed(1)+'%';
     s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="13" fill="${it.col}">${it.label}</text>`+
     `<rect x="${padL}" y="${y+rowH*0.15}" width="${Math.max(w,1)}" height="${rowH*0.7}" rx="6" fill="${it.col}" opacity="0.85"/>`+
-    `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12.5" fill="#f5efdc" font-family="monospace">${it.val} (${pct})</text></g>`;});
+    `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12.5" fill="var(--ink)" font-family="monospace">${it.val} (${pct})</text></g>`;});
   svg.innerHTML=s;
   svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{g.onmousemove=e=>showTip(`<b>${sv.labels[idx]}</b>：按临床决策影响分级<br>病例数 ${sv.n[idx]} / ${tot}`,e);g.onmouseleave=hideTip;});
 }
@@ -3740,8 +3740,8 @@ function renderSubPareto(){
   order.forEach((o,i)=>{const x=padL+i*step+step*0.12, w=step*0.76, h=(o[1]/mx)*bh, y=padT+bh-h;
     const cp=cumAt(order,i)/n;
     s+=`<g data-i="${i}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${colmap[o[0]]}" opacity="0.9"/>`+
-    `<text x="${x+w/2}" y="${y-6}" font-size="12" fill="#f5efdc" text-anchor="middle" font-family="monospace">${o[1]}</text>`+
-    `<text x="${x+w/2}" y="${padT+bh+16}" font-size="12" fill="#c2b89c" text-anchor="middle">${o[0]}</text>`;
+    `<text x="${x+w/2}" y="${y-6}" font-size="12" fill="var(--ink)" text-anchor="middle" font-family="monospace">${o[1]}</text>`+
+    `<text x="${x+w/2}" y="${padT+bh+16}" font-size="12" fill="var(--dim)" text-anchor="middle">${o[0]}</text>`;
     if(i>0) s+=`<line x1="${padL+(i-1)*step+step/2}" y1="${padT+bh-(cumAt(order,i-1)/n)*bh}" x2="${x+w/2}" y2="${padT+bh-cp*bh}" stroke="#ff7ab6" stroke-width="1.5"/>`;
     s+=`<circle cx="${x+w/2}" cy="${padT+bh-cp*bh}" r="3.5" fill="#ff7ab6"/></g>`;});
   svg.innerHTML=s;
@@ -3794,9 +3794,9 @@ function renderSubPTBXL(){
   const svg=document.getElementById('sub-ptbxl-bar'), W=1100,H=240;
   const padL=240,padR=80,padT=14,padB=14, bh=H-padT-padB, rowH=bh/items.length; let s='';
   items.forEach((it,i)=>{const y=padT+i*rowH;const w=it.val*(W-padL-padR);
-    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12.5" fill="#f5efdc">${it.label}</text>`+
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12.5" fill="var(--ink)">${it.label}</text>`+
     `<rect x="${padL}" y="${y+rowH*0.16}" width="${Math.max(w,2)}" height="${rowH*0.68}" rx="5" fill="${it.col}" opacity="0.88"/>`+
-    `<text x="${padL+Math.max(w,2)+8}" y="${y+rowH/2}" font-size="12" fill="#c2b89c" font-family="monospace">${(it.val*100).toFixed(1)}%</text></g>`;});
+    `<text x="${padL+Math.max(w,2)+8}" y="${y+rowH/2}" font-size="12" fill="var(--dim)" font-family="monospace">${(it.val*100).toFixed(1)}%</text></g>`;});
   svg.innerHTML=s;
   svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{g.onmousemove=e=>showTip(`<b>${items[idx].label}</b><br>${(items[idx].val*100).toFixed(1)}%`,e);g.onmouseleave=hideTip;});
   document.getElementById('sub-ptbxl-note').innerHTML=
