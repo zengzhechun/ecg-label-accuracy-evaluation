@@ -61,7 +61,7 @@ section.mod.active{display:block;}
 .tile{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:13px 14px;text-align:center;}
 .tile .v{font-family:var(--mono);font-size:25px;font-weight:700;line-height:1.1;}
 .tile .l{font-size:11.5px;color:var(--dim);margin-top:5px;}
-.tile.pri .v{color:var(--pri)} .tile.acc .v{color:var(--acc)} .tile.good .v{color:var(--good)}
+.tile.pri .v{color:var(--pri)} .tile.acc .v{color:var(--acc)} .tile.good .v{color:var(--pri)}
 .tile.warn .v{color:var(--warn)} .tile.bad .v{color:var(--bad)} .tile.sky .v{color:var(--sky)} .tile.grape .v{color:var(--grape)}
 svg{display:block;width:100%;height:auto;}
 #tooltip{position:fixed;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s;
@@ -94,7 +94,7 @@ select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);bo
 .note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:10px;
   border-top:1px dashed var(--line);padding-top:10px;}
 .note b{color:var(--warn);}
-.scan{font-family:var(--mono);font-size:12.5px;color:var(--good);}
+.scan{font-family:var(--mono);font-size:12.5px;color:var(--pri);}
 footer{position:relative;z-index:1;text-align:center;color:var(--dim);font-size:12px;margin-top:40px;line-height:1.7;}
 canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,0.55);}
 .quiz{padding:10px 0 0;}
@@ -112,6 +112,20 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
 .quiz .meta .score b{color:var(--pri);}
 .quiz .reveal{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.6;}
 @media(max-width:760px){header.top h1{font-size:23px}.tiles{grid-template-columns:repeat(2,1fr)}.quiz .opts{grid-template-columns:1fr}}
+/* ===== 中/英双语切换 ===== */
+.en{display:none}
+[data-lang="en"] .zh{display:none}
+[data-lang="en"] .en{display:inline}
+text .en{display:none}
+[data-lang="en"] text .zh{display:none}
+[data-lang="en"] text .en{display:inline}
+.lang-toggle{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--pri);
+  padding:3px 11px;border-radius:9px;font-size:11.5px;font-family:var(--font);font-weight:600;
+  transition:.15s;user-select:none;white-space:nowrap;}
+.lang-toggle:hover{border-color:var(--pri);box-shadow:0 0 10px rgba(37,99,235,.25);}
+.cbox{position:relative;}
+.cbox>.cbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;}
+.cbox>.cbar .ttl{font-size:15px;font-weight:600;letter-spacing:.3px;}
 </style>
 </head>
 <body>
@@ -119,7 +133,7 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
 <header class="top">
   <h1>心电图 AI 标签噪声模拟器</h1>
   <p class="sub">你是指挥官。左侧看清<b style="color:var(--bad)">宁波数据库的真实标签质量</b>，右侧由你设定<b style="color:var(--pri)">模型学习能力</b>，
-  实时观察噪声标签如何<i>侵蚀</i>模型在<b style="color:var(--good)">真金标准（专家最终判定）</b>下的真实表现，并找出数据库标签错误率必须压到多低才不拖累训练。
+  实时观察噪声标签如何<i>侵蚀</i>模型在<b style="color:var(--pri)">真金标准（专家最终判定）</b>下的真实表现，并找出数据库标签错误率必须压到多低才不拖累训练。
   <br/><span style="color:var(--dim2);font-size:12px;">术语约定：<b>假金标准</b> = 数据库原始标签（训练时喂给模型的"原料"）；<b>真金标准</b> = 专家最终判定（评估模型真实能力的标尺）；<b>账面</b> = 按假金标准算出来的指标。</span></p>
   <span class="badge">数据底座：宁波数据库去重后 623 条 / 613 主分析集 · 39 诊断单元 · v15.0</span>
 </header>
@@ -141,30 +155,32 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
 
   <div class="grid" style="grid-template-columns:1.15fr 1fr;margin-top:16px;">
     <div class="panel">
-      <h3>错误类型分布<span class="tag">人工偏差分类 · 10 类</span></h3>
+      <h3>错误类型分布<span class="tag">人工偏差分类 · 10 类</span><button class="lang-toggle" data-box="box-errbars" style="float:right">EN</button></h3>
       <p class="desc">研究团队对 364 条不准确记录逐条标注偏差类型。切换查看"含该类型"或"纯类型"计数。</p>
       <div class="row" style="margin-bottom:10px;">
         <button class="btn toggle on" id="et-by">含该类型</button>
         <button class="btn toggle" id="et-pure">纯类型</button>
       </div>
-      <svg id="err-bars" viewBox="0 0 560 360" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="cbox" id="box-errbars" data-lang="zh"><svg id="err-bars" viewBox="0 0 560 360" preserveAspectRatio="xMidYMid meet"></svg>
       <div class="note" id="et-note"></div>
+      </div>
     </div>
     <div class="panel">
-      <h3>逐标签：漏标 vs 误标<span class="tag">39 诊断单元</span></h3>
+      <h3>逐标签：漏标 vs 误标<span class="tag">39 诊断单元</span><button class="lang-toggle" data-box="box-scatter" style="float:right">EN</button></h3>
       <p class="desc">每个气泡 = 一个诊断标签。横轴漏标率（被漏写），纵轴误标率 FDR（被错写），气泡大小=临床负担，颜色=临床重要性。越靠右上越危险。</p>
-      <svg id="dx-scatter" viewBox="0 0 560 360" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="cbox" id="box-scatter" data-lang="zh"><svg id="dx-scatter" viewBox="0 0 560 360" preserveAspectRatio="xMidYMid meet"></svg>
       <div class="legend">
-        <span><i style="background:var(--bad)"></i>5分(高)</span>
-        <span><i style="background:var(--warn)"></i>3分(中)</span>
-        <span><i style="background:var(--pri)"></i>1分(一般)</span>
-        <span style="margin-left:auto">气泡面积 ∝ 临床负担</span>
+        <span><i style="background:var(--bad)"></i>bi('5分(高)','5 (high)')</span>
+        <span><i style="background:var(--warn)"></i>bi('3分(中)','3 (mid)')</span>
+        <span><i style="background:var(--pri)"></i>bi('1分(一般)','1 (general)')</span>
+        <span style="margin-left:auto">bi('气泡面积 ∝ 临床负担','Bubble area ∝ clinical burden')</span>
+      </div>
       </div>
     </div>
   </div>
 
   <div class="panel" style="margin-top:16px;">
-    <h3>全部 39 个诊断标签的"双率"清单<span class="tag">可排序</span></h3>
+    <h3>全部 39 个诊断标签的"双率"清单<span class="tag">可排序</span><button class="lang-toggle" data-box="box-dxtable" style="float:right">EN</button></h3>
     <p class="desc">按临床重要性 ×（漏标+½误标）排序。点击列头切换排序键。"—"表示该标签专家判定为 0 例（无漏标率）或数据库未记录（无误标率）。</p>
     <div class="row" style="margin-bottom:8px;">
       <button class="btn toggle on" id="sort-burden">按临床负担</button>
@@ -172,20 +188,21 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
       <button class="btn toggle" id="sort-fdr">按误标率</button>
       <span style="font-size:12px;color:var(--dim);margin-left:auto">共 39 行</span>
     </div>
-    <svg id="dx-table" viewBox="0 0 1100 1080" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="cbox" id="box-dxtable" data-lang="zh"><svg id="dx-table" viewBox="0 0 1100 1080" preserveAspectRatio="xMidYMid meet"></svg></div>
   </div>
 
   <div class="panel" style="margin-top:16px;">
-    <h3>OOV 词汇：专家填补的"装不下"的诊断<span class="tag">30 类 · 100% 漏标</span></h3>
+    <h3>OOV 词汇：专家填补的"装不下"的诊断<span class="tag">30 类 · 100% 漏标</span><button class="lang-toggle" data-box="box-oov" style="float:right">EN</button></h3>
     <p class="desc">数据库只有 39 个固定标签的编码能力。下列诊断专家用过、但数据库无法表达 → 训练时模型永远学不到。<b>每个 OOV 在数据库中相当于 100% 漏标</b>（qfn=100%）。</p>
-    <svg id="oov-bars" viewBox="0 0 1100 560" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="cbox" id="box-oov" data-lang="zh"><svg id="oov-bars" viewBox="0 0 1100 560" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="note" id="oov-note"></div>
+      </div>
   </div>
 
   <div class="panel" style="margin-top:16px;">
-    <h3>纠正共现互动热图<span class="tag">数据库标签 → 专家替换</span></h3>
+    <h3>纠正共现互动热图<span class="tag">数据库标签 → 专家替换</span><button class="lang-toggle" data-box="box-cooc" style="float:right">EN</button></h3>
     <p class="desc">纵轴=被删除的数据库标签（前 15 位），横轴=专家新增标签（前 15 位），颜色越深共现越多。鼠标悬停查看次数，下方挑战模式测一测你对临床纠正常识的直觉。</p>
-    <svg id="cooc-heat" viewBox="0 0 1100 480" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="cbox" id="box-cooc" data-lang="zh"><svg id="cooc-heat" viewBox="0 0 1100 480" preserveAspectRatio="xMidYMid meet"></svg></div>
     <div class="note" style="margin-top:6px;">共 89 对热图格子（89 / 225 ≈ 39.6% 非空），主对角线模式：专家把含糊的 DB 标签聚类到几个大标签（ST-T改变、心房颤动、右束支阻滞）。</div>
   </div>
 
@@ -221,7 +238,7 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
 
       <!-- ③输出层：6个最终指标 -->
       <div class="panel" style="background:rgba(95,227,161,0.04);border-color:rgba(95,227,161,0.4);">
-        <h3 style="color:var(--good);">③ 输出层（真金标准下的指标）</h3>
+        <h3 style="color:var(--pri);">③ 输出层（真金标准下的指标）</h3>
         <div id="dl-outputs" style="font-family:var(--mono);font-size:13px;line-height:2.1;"></div>
         <div class="note" style="margin-top:6px;font-size:11.5px;">AUC 由双正态模型 Φ((Φ⁻¹(Se)+Φ⁻¹(Sp))/√2) 计算。</div>
       </div>
@@ -229,29 +246,29 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
 
     <!-- 三层状态与两类错误示意 -->
     <div class="panel" style="margin-top:14px;background:rgba(255,122,182,0.04);border-color:rgba(255,122,182,0.35);">
-      <h3 style="color:var(--acc);">三层状态与两类错误 · 实时计数（按 N=10000 模拟样本）</h3>
+      <h3 style="color:var(--acc);">三层状态与两类错误 · 实时计数（按 N=10000 模拟样本）<button class="lang-toggle" data-box="box-threelayer" style="float:right">EN</button></h3>
       <p class="desc">从"假金标准（训练时的脏标签）" → "模型预测" → "真金标准（评估时的专家判定）"——三层关系图。每个方框代表一组样本（阳性 Y / 阴性 N），数字随输入层滑块实时刷新。</p>
-      <svg id="dl-three-layer" viewBox="0 0 1100 260" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="cbox" id="box-threelayer" data-lang="zh"><svg id="dl-three-layer" viewBox="0 0 1100 260" preserveAspectRatio="xMidYMid meet"></svg></div>
     </div>
 
     <!-- 2x2 列联表：账面 vs 真金标准 -->
     <div class="panel" style="margin-top:14px;background:rgba(76,199,255,0.04);border-color:rgba(76,199,255,0.35);">
-      <h3 style="color:var(--sky);">2×2 列联表：账面（按假金标准） vs 真金标准</h3>
+      <h3 style="color:var(--sky);">2×2 列联表：账面（按假金标准） vs 真金标准<button class="lang-toggle" data-box="box-twobytwo" style="float:right">EN</button><button class="lang-toggle" data-box="box-metric" style="float:right">EN</button></h3>
       <p class="desc">两套计数：左表是模型预测 vs <b>假金标准</b>（账面指标来源），右表是模型预测 vs <b>真金标准</b>（真实指标来源）。两表行/列结构相同，差异完全来自假金标准的标签错位。</p>
-      <div id="dl-twobytwo" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;"></div>
-      <div id="dl-metric-table" style="margin-top:14px;"></div>
+      <div class="cbox" id="box-twobytwo" data-lang="zh"><div id="dl-twobytwo" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;"></div></div>
+      <div class="cbox" id="box-metric" data-lang="zh"><div id="dl-metric-table" style="margin-top:14px;"></div></div>
     </div>
   </div>
 </section>
 
 <!-- ============ 模块2 · 衰减沙盘（合并原 M2+M3） ============ -->
 <section id="m2" class="mod">
-  <p class="lead">模块二 · 衰减沙盘。顶部<b style="color:var(--pri)">能力雷达</b>俯瞰六指标衰减，中段拖动左侧<b>模型能力</b>滑块 / 右侧<b style="color:var(--bad)">数据库噪声</b>滑块，<b style="color:var(--acc)">衰减柱</b>立即刷新——同一行对照<b>账面（按假金标准 = 数据库原始标签）</b>与<b style="color:var(--good)">真金标准（按专家最终判定）</b>。下方<b>信号场</b>展示 4 类粒子的实时分布，最末<b>贝叶斯 / Bootstrap</b>传播不确定性区间。</p>
+  <p class="lead">模块二 · 衰减沙盘。顶部<b style="color:var(--pri)">能力雷达</b>俯瞰六指标衰减，中段拖动左侧<b>模型能力</b>滑块 / 右侧<b style="color:var(--bad)">数据库噪声</b>滑块，<b style="color:var(--acc)">衰减柱</b>立即刷新——同一行对照<b>账面（按假金标准 = 数据库原始标签）</b>与<b style="color:var(--pri)">真金标准（按专家最终判定）</b>。下方<b>信号场</b>展示 4 类粒子的实时分布，最末<b>贝叶斯 / Bootstrap</b>传播不确定性区间。</p>
   <div class="panel">
-    <h3>组合式能力雷达图<span class="tag">账面 vs 真金标准 vs 衰减</span></h3>
-    <p class="desc">六轴（Se/Sp/PPV/NPV/F1/AUC）<b style="color:var(--acc)">账面（按假金标准）</b>与<b style="color:var(--good)">真金标准</b>双多边形重叠显示，<b style="color:var(--pri)">衰减幅度</b>以虚线轮廓勾勒——一眼看出哪几个指标缩水最多。联动下方全部滑块实时刷新。</p>
+    <h3>组合式能力雷达图<span class="tag">账面 vs 真金标准 vs 衰减</span><button class="lang-toggle" data-box="box-radar" style="float:right">EN</button></h3>
+    <p class="desc">六轴（Se/Sp/PPV/NPV/F1/AUC）<b style="color:var(--acc)">账面（按假金标准）</b>与<b style="color:var(--pri)">真金标准</b>双多边形重叠显示，<b style="color:var(--pri)">衰减幅度</b>以虚线轮廓勾勒——一眼看出哪几个指标缩水最多。联动下方全部滑块实时刷新。</p>
     <div class="grid" style="grid-template-columns:2fr 1fr;align-items:start;gap:14px;">
-      <svg id="radar" viewBox="0 0 820 380" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="cbox" id="box-radar" data-lang="zh"><svg id="radar" viewBox="0 0 820 380" preserveAspectRatio="xMidYMid meet"></svg>
       <div>
         <div class="legend" style="flex-direction:column;align-items:flex-start;gap:6px;">
           <span><i style="background:var(--acc);opacity:0.55"></i>账面（按假金标准 = 数据库原始标签）</span>
@@ -259,6 +276,7 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
           <span><i style="background:transparent;border:2px dashed var(--pri)"></i>衰减幅度 = 账面 − 真金标准</span>
         </div>
         <div class="note" id="radar-note" style="margin-top:8px;"></div>
+      </div>
       </div>
     </div>
   </div>
@@ -282,9 +300,9 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
       <div class="tiles" id="m2-kpi" style="margin-top:10px;"></div>
     </div>
     <div class="panel">
-      <h3>六指标衰减：账面 vs 真金标准<span class="tag">实时联动</span></h3>
-      <p class="desc">每行一对柱：<b style="color:var(--acc)">左柱=账面（假金标准）</b>，<b style="color:var(--good)">右柱=真金标准</b>，右侧红字=衰减（账面−真金标准，>0 即账面掺水）。</p>
-      <svg id="decay-bars" viewBox="0 0 720 380" preserveAspectRatio="xMidYMid meet"></svg>
+      <h3>六指标衰减：账面 vs 真金标准<span class="tag">实时联动</span><button class="lang-toggle" data-box="box-decay" style="float:right">EN</button></h3>
+      <p class="desc">每行一对柱：<b style="color:var(--acc)">左柱=账面（假金标准）</b>，<b style="color:var(--pri)">右柱=真金标准</b>，右侧红字=衰减（账面−真金标准，>0 即账面掺水）。</p>
+      <div class="cbox" id="box-decay" data-lang="zh"><svg id="decay-bars" viewBox="0 0 720 380" preserveAspectRatio="xMidYMid meet"></svg></div>
       <div style="margin-top:16px;padding:12px 14px;background:rgba(255,87,87,0.06);border:1px solid rgba(255,87,87,0.35);border-radius:10px;">
         <h3 style="margin:0 0 4px 0;font-size:15px;color:var(--bad);">数据库噪声强度调节器<span class="tag" style="color:var(--pri);border-color:var(--line);">实时</span></h3>
         <p class="desc" style="margin-bottom:8px;">拖动改变<b>数据库</b>漏标率 / 误标率（FDR）——上方衰减柱与雷达图会立即刷新。下方可一键回到数据库总体噪声值，或按<b>具体诊断标签 / OOV 词汇</b>单独还原该标签的实证噪声。</p>
@@ -308,25 +326,26 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
   </div>
 
   <div class="panel" style="margin-top:16px;">
-    <h3>信号场 · 真实正确率<span class="tag" style="color:var(--pri);border-color:var(--line);">4 类粒子 · 全宽视图</span></h3>
-    <p class="desc">每个粒子 = 一个样本。配色按 <b>账面（按假金标准）</b> × <b style="color:var(--good)">真金标准</b> 的二维命中拆分，<b style="color:var(--acc)">性能蒸发</b>粒子即"账面正确但真金标准错误"——这就是 账面 − 真实 的可视化来源。拖动上方 qfn/FDR 滑块时观察蒸发粒子比例的变化。下方指标实时刷新。</p>
-    <canvas id="particle" class="viz" width="1100" height="380"></canvas>
+    <h3>信号场 · 真实正确率<span class="tag" style="color:var(--pri);border-color:var(--line);">4 类粒子 · 全宽视图</span><button class="lang-toggle" data-box="box-particle" style="float:right">EN</button></h3>
+    <p class="desc">每个粒子 = 一个样本。配色按 <b>账面（按假金标准）</b> × <b style="color:var(--pri)">真金标准</b> 的二维命中拆分，<b style="color:var(--acc)">性能蒸发</b>粒子即"账面正确但真金标准错误"——这就是 账面 − 真实 的可视化来源。拖动上方 qfn/FDR 滑块时观察蒸发粒子比例的变化。下方指标实时刷新。</p>
+    <div class="cbox" id="box-particle" data-lang="zh"><canvas id="particle" class="viz" width="1100" height="380"></canvas>
     <div class="legend" id="sig-legend" style="margin-top:10px;font-size:12px;">
-      <span><i style="background:#5fe3a1;outline:1px solid #c9f3da"></i>稳定正确 <b id="sig-c1" style="color:#a8f0c8">—</b></span>
-      <span><i style="background:#ff7ab6;outline:1px solid #ffd0e6"></i>性能蒸发 <b id="sig-c2" style="color:#ffb3d6">—</b></span>
-      <span><i style="background:#4cc7ff;outline:1px solid #a0e1ff"></i>意外反转 <b id="sig-c3" style="color:#a0e1ff">—</b></span>
-      <span><i style="background:#ff5757;outline:1px solid #ffb0b0"></i>稳定错误 <b id="sig-c4" style="color:#ffb0b0">—</b></span>
-      <span style="margin-left:auto;color:var(--dim);">账面 = 稳定+蒸发 · 真金标准 = 稳定+反转</span>
+      <span><i style="background:#5fe3a1;outline:1px solid #c9f3da"></i>bi('稳定正确','Stable correct') <b id="sig-c1" style="color:#a8f0c8">—</b></span>
+      <span><i style="background:#ff7ab6;outline:1px solid #ffd0e6"></i>bi('性能蒸发','Performance evaporation') <b id="sig-c2" style="color:#ffb3d6">—</b></span>
+      <span><i style="background:#4cc7ff;outline:1px solid #a0e1ff"></i>bi('意外反转','Unexpected reversal') <b id="sig-c3" style="color:#a0e1ff">—</b></span>
+      <span><i style="background:#ff5757;outline:1px solid #ffb0b0"></i>bi('稳定错误','Stable error') <b id="sig-c4" style="color:#ffb0b0">—</b></span>
+      <span style="margin-left:auto;color:var(--dim);">bi('账面 = 稳定+蒸发 · 真金标准 = 稳定+反转','Apparent = stable+evap · True-gold = stable+reverse')</span>
     </div>
     <div class="row" style="margin-top:10px;justify-content:space-between;">
-      <span class="kpi">账面正确率 <b id="acc-app" style="color:var(--acc)">—</b></span>
-      <span class="kpi">真金标准正确率 <b id="acc-tru" style="color:var(--good)">—</b></span>
-      <span class="kpi">性能蒸发 <b id="acc-loss" style="color:var(--bad)">—</b></span>
+      <span class="kpi">bi('账面正确率','Apparent accuracy') <b id="acc-app" style="color:var(--acc)">—</b></span>
+      <span class="kpi">bi('真金标准正确率','True-gold accuracy') <b id="acc-tru" style="color:var(--pri)">—</b></span>
+      <span class="kpi">bi('性能蒸发','Performance evaporation') <b id="acc-loss" style="color:var(--bad)">—</b></span>
     </div>
+      </div>
   </div>
 
   <div class="panel" style="margin-top:16px;">
-    <h3>不确定性传播：贝叶斯 &amp; Bootstrap</h3>
+    <h3>不确定性传播：贝叶斯 &amp; Bootstrap<button class="lang-toggle" data-box="box-hist" style="float:right">EN</button></h3>
     <p class="desc">点击运行：从漏标率/误标率的<b>贝叶斯后验</b>（Beta）、以及 39 标签的<b>Bootstrap 重抽样</b>各抽 500 套，传播出"衰减量"的分布，给出均值与 95% 区间。白色竖线=点估计（当前衰减）。</p>
     <div class="row" style="margin-bottom:8px;">
       <label style="font-size:12.5px;color:var(--dim)">评估指标：</label>
@@ -346,7 +365,7 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
       <button class="btn" id="clear-hist">清除</button>
       <span class="scan" id="hist-info"></span>
     </div>
-    <canvas id="hist" class="viz" width="1040" height="260"></canvas>
+    <div class="cbox" id="box-hist" data-lang="zh"><canvas id="hist" class="viz" width="1040" height="260"></canvas></div>
   </div>
 </section>
 
@@ -355,9 +374,9 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
   <p class="lead">模块三 · 错误率阈值推演。给定模型能力 c 与可接受的"性能损失上限 Δ"，反推<b>数据库漏标率</b>必须压到多低。结合模型学习潜力，看"更好的模型能否容忍更脏的标签"。下方"真金标准"=专家最终判定。</p>
   <div class="grid" style="grid-template-columns:1.1fr 1fr;">
     <div class="panel">
-      <h3>容忍边界曲线</h3>
+      <h3>容忍边界曲线<button class="lang-toggle" data-box="box-thr" style="float:right">EN</button></h3>
       <p class="desc">横轴数据库漏标率 qfn，纵轴真金标准下真实指标。绿区=安全（损失≤Δ），红区=危险。白虚线=当前实证漏标率。</p>
-      <svg id="thr-plot" viewBox="0 0 620 400" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="cbox" id="box-thr" data-lang="zh"><svg id="thr-plot" viewBox="0 0 620 400" preserveAspectRatio="xMidYMid meet"></svg></div>
     </div>
     <div class="panel">
       <h3>阈值推演控制台</h3>
@@ -378,9 +397,9 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
     </div>
   </div>
   <div class="panel" style="margin-top:16px;">
-    <h3>模型潜力 × 容忍阈值：qfn<sub>max</sub> 随 c 的地形</h3>
+    <h3>模型潜力 × 容忍阈值：qfn<sub>max</sub> 随 c 的地形<button class="lang-toggle" data-box="box-cplot" style="float:right">EN</button></h3>
     <p class="desc">对同一指标，更好的模型（c 更大）能容忍更高的漏标率。曲线标注当前实证漏标率（红点）。</p>
-    <svg id="c-plot" viewBox="0 0 1040 320" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="cbox" id="box-cplot" data-lang="zh"><svg id="c-plot" viewBox="0 0 1040 320" preserveAspectRatio="xMidYMid meet"></svg></div>
   </div>
 </section>
 
@@ -395,7 +414,7 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
         <select id="pd-dx" style="width:100%;margin-top:6px"></select></label>
       <div class="note" id="pd-sub" style="flex:1;min-width:240px;margin:0"></div>
     </div>
-    <canvas id="pd-canvas" class="viz" style="height:430px;margin-top:12px"></canvas>
+    <div class="cbox" id="box-pd" data-lang="zh"><button class="lang-toggle" data-box="box-pd" style="float:right;margin-bottom:6px">EN</button><canvas id="pd-canvas" class="viz" style="height:430px;margin-top:12px"></canvas></div>
     <div class="note" id="pd-note" style="margin-top:10px"></div>
   </div>
 </section>
@@ -404,10 +423,10 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
 <section id="m6" class="mod">
   <p class="lead">模块五 · 核心心律失常诊断错误/缺失的子集细化分析。在<b>主分析集 613 例总体四率</b>之外，进一步拆解「类型01：核心心律失常诊断错误或缺失」子集的<b>错误子型 A/B/C/D、真值病种分布、共现结构、严重程度与三层归因</b>，并以 <b style="color:var(--sky)">PTB-XL 双阅</b> 作为外部对照。切换 <b>含 / 纯</b> 子集可联动下方错误子型与帕累托图。</p>
 
-  <div class="tiles" id="sub-kpi"></div>
+  <div class="cbox" id="box-subkpi" data-lang="zh"><div class="tiles" id="sub-kpi"></div></div>
   <div class="note" id="sub-kpi-note"></div>
 
-  <div class="row" style="margin:14px 0 4px;">
+  <div class="row" style="margin:14px 0 4px;"><button class="lang-toggle" data-box="box-subkpi" style="float:right">EN</button>
     <button class="btn toggle on" id="sub-full">含类型01（n=125）</button>
     <button class="btn toggle" id="sub-pure">纯类型01（n=37）</button>
     <span style="font-size:12px;color:var(--dim);margin-left:auto;">含 = 偏差类型含核心心律失常；纯 = 偏差类型仅有核心心律失常</span>
@@ -415,57 +434,61 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
 
   <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px;">
     <div class="panel">
-      <h3>错误子型 A / B / C / D<span class="tag">可点击看定义</span></h3>
+      <h3>错误子型 A / B / C / D<span class="tag">可点击看定义</span><button class="lang-toggle" data-box="box-subabcd" style="float:right">EN</button></h3>
       <p class="desc">基于 combo_pattern_cn（原始）vs correctLabel（真值）透明规则推导。点击柱条查看判定规则与临床含义。</p>
-      <svg id="sub-abcd" viewBox="0 0 560 300" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="cbox" id="box-subabcd" data-lang="zh"><svg id="sub-abcd" viewBox="0 0 560 300" preserveAspectRatio="xMidYMid meet"></svg>
       <div class="note" id="sub-abcd-note"></div>
+      </div>
     </div>
     <div class="panel">
-      <h3>真值核心病种分布<span class="tag">按真值</span></h3>
+      <h3>真值核心病种分布<span class="tag">按真值</span><button class="lang-toggle" data-box="box-subdisease" style="float:right">EN</button></h3>
       <p class="desc">子集内病例的「真值」核心心律失常病种。悬停查看计数。</p>
-      <svg id="sub-disease" viewBox="0 0 560 300" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="cbox" id="box-subdisease" data-lang="zh"><svg id="sub-disease" viewBox="0 0 560 300" preserveAspectRatio="xMidYMid meet"></svg>
       <div class="note" id="sub-disease-note"></div>
+      </div>
     </div>
   </div>
 
   <div class="grid" style="grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
     <div class="panel">
-      <h3>严重程度分级（临床决策影响）<span class="tag">高危 / 中危 / 低危</span></h3>
+      <h3>严重程度分级（临床决策影响）<span class="tag">高危 / 中危 / 低危</span><button class="lang-toggle" data-box="box-subseverity" style="float:right">EN</button></h3>
       <p class="desc">按真值病种映射：高危=室速/室颤/高度AVB/病窦；中危=房性快速心律失常；低危=以描述为主。悬停查看口径。</p>
-      <svg id="sub-sev" viewBox="0 0 560 280" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="cbox" id="box-subseverity" data-lang="zh"><svg id="sub-sev" viewBox="0 0 560 280" preserveAspectRatio="xMidYMid meet"></svg></div>
     </div>
     <div class="panel">
-      <h3>错误子型帕累托图<span class="tag">致因排序</span></h3>
+      <h3>错误子型帕累托图<span class="tag">致因排序</span><button class="lang-toggle" data-box="box-subpareto" style="float:right">EN</button></h3>
       <p class="desc">柱=各子型病例数，折线=累计占比，一眼识别主要致因。</p>
-      <svg id="sub-pareto" viewBox="0 0 560 280" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="cbox" id="box-subpareto" data-lang="zh"><svg id="sub-pareto" viewBox="0 0 560 280" preserveAspectRatio="xMidYMid meet"></svg></div>
     </div>
   </div>
 
   <div class="panel" style="margin-top:16px;">
-    <h3>11 类偏差共现结构（Jaccard）<span class="tag">悬停看系数</span></h3>
+    <h3>11 类偏差共现结构（Jaccard）<span class="tag">悬停看系数</span><button class="lang-toggle" data-box="box-subcooc" style="float:right">EN</button></h3>
     <p class="desc">纵轴=被标注的偏差类型，横轴=共现的偏差类型，颜色越深 Jaccard 共现越高（粉色描边=类型01 核心心律失常）。鼠标悬停查看具体系数。</p>
-    <svg id="sub-cooc" viewBox="0 0 1100 640" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="cbox" id="box-subcooc" data-lang="zh"><svg id="sub-cooc" viewBox="0 0 1100 640" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="note" id="sub-cooc-note"></div>
+      </div>
   </div>
 
   <div class="panel" style="margin-top:16px;">
-    <h3>外部对照：PTB-XL 双阅（101 对）<span class="tag">读者 vs 读者</span></h3>
+    <h3>外部对照：PTB-XL 双阅（101 对）<span class="tag">读者 vs 读者</span><button class="lang-toggle" data-box="box-subptbxl" style="float:right">EN</button></h3>
     <p class="desc">同一高质量公开库中两位专科医师独立双阅，用以反衬宁波错误的系统性来源。下方对比「宁波类型01 误标率」与「PTB-XL 结构码一致率 / 判定分歧率」。</p>
     <div class="tiles" id="sub-ptbxl" style="margin-bottom:10px;"></div>
-    <svg id="sub-ptbxl-bar" viewBox="0 0 1100 240" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="cbox" id="box-subptbxl" data-lang="zh"><svg id="sub-ptbxl-bar" viewBox="0 0 1100 240" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="note" id="sub-ptbxl-note"></div>
+      </div>
   </div>
 
   <div class="grid" style="grid-template-columns:1.2fr 1fr;gap:16px;margin-top:16px;">
     <div class="panel">
-      <h3>三层归因分析<span class="tag">数据 / 算法 / 人为</span></h3>
+      <h3>三层归因分析<span class="tag">数据 / 算法 / 人为</span><button class="lang-toggle" data-box="box-subattr" style="float:right">EN</button></h3>
       <p class="desc">基于可获取数据信号的三层归因（算法层为强证据推断，非直接测量）。</p>
-      <div id="sub-attr"></div>
+      <div class="cbox" id="box-subattr" data-lang="zh"><div id="sub-attr"></div></div>
     </div>
     <div class="panel">
-      <h3>典型案例（原始标注 vs 专家回看）<span class="tag">A / B / D</span></h3>
+      <h3>典型案例（原始标注 vs 专家回看）<span class="tag">A / B / D</span><button class="lang-toggle" data-box="box-subcases" style="float:right">EN</button></h3>
       <p class="desc">各取一例展示原始标注与专家回看的差异。</p>
-      <div id="sub-cases"></div>
+      <div class="cbox" id="box-subcases" data-lang="zh"><div id="sub-cases"></div></div>
     </div>
   </div>
 
@@ -2632,6 +2655,30 @@ document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{
   if(b.dataset.tab==='m6') renderSubAll();
 });
 
+
+/* ===== 中/英双语切换基础设施 ===== */
+const BOXLANG={};
+function bi(zh,en){return '<span class="zh">'+zh+'</span><span class="en">'+en+'</span>';}
+function biT(zh,en){return '<tspan class="zh">'+zh+'</tspan><tspan class="en">'+en+'</tspan>';}
+function LR(id){return BOXLANG[id]||'zh';}
+function langBtn(id,titleZh,titleEn){const cur=BOXLANG[id]||'zh';
+  const t=titleZh?('<span class="ttl">'+bi(titleZh,titleEn||titleZh)+'</span>'):'';
+  return '<div class="cbar">'+t+'<button class="lang-toggle" type="button" data-box="'+id+'">'+(cur==='zh'?'EN':'中')+'</button></div>';}
+function regRedraw(id,fn){const b=document.getElementById(id);if(b)b._redraw=fn;}
+document.addEventListener('click',function(e){const btn=e.target.closest('.lang-toggle');if(!btn)return;
+  const id=btn.getAttribute('data-box');const nx=(BOXLANG[id]||'zh')==='zh'?'en':'zh';BOXLANG[id]=nx;
+  const box=document.getElementById(id);if(box){box.setAttribute('data-lang',nx);if(box._redraw)box._redraw(nx);}
+  btn.textContent=(nx==='zh'?'EN':'中');});
+const DX_EN={"心房颤动":"Atrial fibrillation (AFib)","心房扑动":"Atrial flutter","ST-T改变":"ST-T abnormality","T波改变":"T-wave abnormality","右束支阻滞":"Right bundle branch block (RBBB)","异常Q波":"Abnormal Q wave","室性早搏":"Ventricular premature beat (PVC)","T波倒置":"T-wave inversion","全导联低电压QRS":"Global QRS low voltage","ST段压低":"ST-segment depression","ST段延长":"Prolonged ST segment","轴向右移":"Rightward axis deviation","侧壁心肌梗死":"Lateral MI","室内差异传导":"Intraventricular aberrancy","窦性心律":"Sinus rhythm","房性早搏":"Atrial premature beat (PAC)","QT间期延长":"Prolonged QT interval","轴向左移":"Leftward axis deviation","窦性心律不齐":"Sinus arrhythmia","左心室肥厚":"Left ventricular hypertrophy (LVH)","三度房室传导阻滞":"3rd-degree AV block","P波改变":"P-wave abnormality","窦性心动过速":"Sinus tachycardia","一度房室传导阻滞":"1st-degree AV block","左后束支传导阻滞":"Left posterior fascicular block","室壁早期复极化":"Early repolarization","房性心动过速":"Atrial tachycardia","室上性心动过速":"Supraventricular tachycardia (SVT)","窦性心动过缓":"Sinus bradycardia","U波":"U wave","ST段抬高":"ST-segment elevation","预激综合征":"Wolff-Parkinson-White (WPW)","室性融合波":"Ventricular fusion beat","交接区逸搏":"Junctional escape beat","逆时针旋转":"Counterclockwise rotation","房室传导阻滞":"AV block","PR间期延长":"Prolonged PR interval","顺时针旋转":"Clockwise rotation","二度房室传导阻滞（一型）":"2nd-degree AV block (type I)"};
+const ERR_EN={"类型01：核心心律失常诊断错误或缺失":"T01 Core arrhythmia dx error/omission","类型02：传导阻滞细化补充":"T02 Conduction-block refinement","类型03：新增ST-T相关改变":"T03 Added ST-T changes","类型04：新增心电轴异常":"T04 Added axis abnormality","类型05：新增或细化QRS低电压":"T05 Added/refined QRS low voltage","类型06：新增异常Q波/R波递增不良":"T06 Added abnormal Q / poor R progression","类型08：新增起搏器/起搏心律诊断":"T08 Added pacemaker/rhythm dx","类型09：新增P波异常/U波等其他次要异常":"T09 Added P-wave/U-wave etc.","类型10：原多诊断冗余错误":"T10 Original multi-dx redundancy","其他未分类偏差":"Other uncategorized deviation"};
+const OOV_EN={"左心室高电压":"Left ventricular high voltage","胸导联R波上升不良":"Poor R-wave progression (precordial)","肢导联低电压":"Limb-lead low voltage","V1导联R/S>1":"V1 R/S > 1","心室起搏心电图":"Ventricular paced ECG","心脏起搏器":"Cardiac pacemaker","左前分支阻滞":"Left anterior fascicular block","PtfV1增大":"PtfV1 enlargement","V5导联R/S<1":"V5 R/S < 1","心脏临时起搏器":"Temporary cardiac pacemaker","部分心室起搏心电图":"Partial ventricular paced ECG","完全性左束支传导阻滞":"Complete LBBB","胸导联低电压":"Precordial low voltage","室内传导阻滞":"Intraventricular conduction delay","U波改变":"U-wave abnormality","右心室肥大":"Right ventricular hypertrophy","心房及心室起搏心电图":"Atrial & ventricular paced ECG","心房心室起搏心电图":"Atrial & ventricular paced ECG","窦性心动过缓伴心律不齐":"Sinus bradycardia with arrhythmia","窦性心搏":"Sinus beat","V5R/S<1":"V5 R/S < 1","二度I型窦房传导阻滞":"2nd-degree type I SA block","加速性房性自主心律":"Accelerated atrial rhythm","异位心律":"Ectopic rhythm","心房起搏心律":"Atrial paced rhythm","心房颤动,室内差异传导":"Atrial fibrillation with aberrancy","窦房结至心房游走性心律":"Wandering atrial pacemaker","起搏信号":"Pacemaker spike","部分心室起搏信号":"Partial ventricular pacing spike","间歇性完全性右束支传导阻滞":"Intermittent complete RBBB"};
+const SEV_EN={"高危":"High-risk","中危":"Medium-risk","低危":"Low-risk"};
+const URG_EN={"低危":"Low-risk","中低":"Low-med","中":"Medium","中高":"Med-high","高危":"High-risk"};
+const COOC_EN={"其他":"Other","T1 核心心律失常":"T1 Core arrhythmia","T1 核心心律失常*":"T1 Core arrhythmia*","T10 多诊断冗余":"T10 Multi-dx redundancy","T2 传导阻滞细化":"T2 Conduction refinement","T3 ST-T改变":"T3 ST-T changes","T4 心电轴异常":"T4 Axis abnormality","T5 QRS低电压":"T5 QRS low voltage","T6 异常Q波":"T6 Abnormal Q wave","T8 起搏心律":"T8 Pacing rhythm","T9 P/U波异常":"T9 P/U-wave abnormality"};
+const ET_LBL=(zh)=>ERR_EN[zh]||zh;
+const DX_LBL=(zh)=>DX_EN[zh]||zh;
+const OOV_LBL=(zh)=>OOV_EN[zh]||zh;
+
 /* =================== 模块1 · 渲染 =================== */
 function renderM1tiles(){
   const t=document.getElementById('m1-tiles');
@@ -2650,15 +2697,15 @@ function renderErrBars(){
   data.forEach((d,i)=>{const y=top+i*rowH;const w=(defs[i]/mx)*(W-180);
     const col=i===0?'#ff7a7a':'#ffb454';
     s+=`<g data-t="${encodeURIComponent(d.type)}" data-n="${defs[i]}">
-      <text x="0" y="${y+14}" font-size="11.5" fill="var(--ink)">${d.type.replace('类型','').slice(0,16)}</text>
+      <text x="0" y="${y+14}" font-size="11.5" fill="var(--ink)">${biT(d.type.replace('类型','').slice(0,16), ET_LBL(d.type))}</text>
       <rect x="150" y="${y+2}" width="${Math.max(w,1)}" height="16" rx="5" fill="${col}" opacity="0.85"/>
       <text x="${152+Math.max(w,1)+6}" y="${y+15}" font-size="12" fill="var(--ink)" font-family="monospace">${defs[i]}</text></g>`;});
   svg.innerHTML=s;
   svg.querySelectorAll('g[data-t]').forEach(g=>g.onmousemove=e=>showTip(
-    `<b>${decodeURIComponent(g.dataset.t)}</b><br>计数：${g.dataset.n} 条`,e));
+    `<b>${decodeURIComponent(g.dataset.t)}</b><br>${bi('计数','Count')}：${g.dataset.n} ${bi('条','cases')}`,e));
   svg.querySelectorAll('g[data-t]').forEach(g=>g.onmouseleave=hideTip);
   document.getElementById('et-note').innerHTML=
-    `主导错误为 <b>类型01 核心心律失常诊断错误或缺失</b>（含 ${DATA.err_types[0].n_含} 条 / 纯 ${DATA.err_types[0].n_纯} 条），印证衰减分析的核心结论。`;
+    `${bi('主导错误为','Dominant error is')} <b>${bi('类型01 核心心律失常诊断错误或缺失','T01 Core arrhythmia dx error/omission')}</b>（${bi('含','incl.')} ${DATA.err_types[0].n_含} ${bi('条','cases')} / ${bi('纯','pure')} ${DATA.err_types[0].n_纯} ${bi('条','cases')}），${bi('印证衰减分析的核心结论','confirming the core attenuation conclusion')}。`;
 }
 function renderScatter(){
   const svg=document.getElementById('dx-scatter');const W=560,H=360;
@@ -2671,15 +2718,15 @@ function renderScatter(){
     s+=`<text x="${gx}" y="${py+bh+16}" font-size="9.5" fill="var(--dim)" text-anchor="middle">${(i*10)}%</text>`;}
   for(let i=0;i<=9;i++){const gy=py+bh-i*bh/9;s+=`<line x1="${px}" y1="${gy}" x2="${px+bw}" y2="${gy}" stroke="#1c2740"/>`;
     s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="var(--dim)" text-anchor="end">${(i*10)}%</text>`;}
-  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="var(--dim)" text-anchor="middle">漏标率 qfn（越右越漏）</text>`;
-  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="var(--dim)" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">误标率 FDR（越上越乱）</text>`;
+  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="var(--dim)" text-anchor="middle">${biT('漏标率 qfn（越右越漏）','Miss rate qfn (right = more missed)')}</text>`;
+  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="var(--dim)" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">${biT('误标率 FDR（越上越乱）','False-discovery rate FDR (up = more false)')}</text>`;
   dx.forEach(d=>{const cx=X(d.qfn_dx),cy=Y(d.fdr_dx);const r=4+Math.sqrt(d.burden)/3.2;
     const col=d.sev===5?'#ff7a7a':d.sev===3?'#ffd166':'#ffb454';
     s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}" opacity="0.62" stroke="${col}" stroke-width="1"
       data-u="${encodeURIComponent(d.unit)}" data-q="${fmtP(d.qfn_dx)}" data-f="${fmtP(d.fdr_dx)}" data-b="${d.burden}" data-sev="${d.sev}"/>`;});
   svg.innerHTML=s;
   svg.querySelectorAll('circle').forEach(c=>c.onmousemove=e=>showTip(
-    `<b>${decodeURIComponent(c.dataset.u)}</b><br>临床重要性：${c.dataset.sev} 分<br>漏标率：${c.dataset.q}<br>误标率：${c.dataset.f}<br>临床负担：${c.dataset.b}`,e));
+    `<b>${decodeURIComponent(c.dataset.u)}</b><br>${bi('临床重要性','Clinical importance')}：${c.dataset.sev} ${bi('分','pts')}<br>${bi('漏标率','Miss rate')}：${c.dataset.q}<br>${bi('误标率','False-discovery')}：${c.dataset.f}<br>${bi('临床负担','Clinical burden')}：${c.dataset.b}`,e));
   svg.querySelectorAll('circle').forEach(c=>c.onmouseleave=hideTip);
 }
 let dxSort='burden';
@@ -2691,13 +2738,14 @@ function renderDxTable(){
   else if(dxSort==='fdr') all.sort((a,b)=>(b.fdr_dx||-1)-(a.fdr_dx||-1));
   const rowH=(H-32)/all.length;let s='';
   const cols=[['诊断标签',14,200],['漏标率 qfn',330,250],['误标率 FDR',620,250],['临床负担',920,140]];
-  cols.forEach(c=>s+=`<text x="${c[1]}" y="18" font-size="12" fill="var(--dim)">${c[0]}</text>`);
+  const COLEN=['Diagnostic label','Miss rate qfn','False-discovery FDR','Clinical burden'];
+  cols.forEach((c,i)=>s+=`<text x="${c[1]}" y="18" font-size="12" fill="var(--dim)">${biT(c[0],COLEN[i])}</text>`);
   s+=`<line x1="10" y1="24" x2="${W-10}" y2="24" stroke="#3a4a6a"/>`;
   all.forEach((d,i)=>{const y=30+i*rowH;const qfnV=d.qfn_dx==null?null:d.qfn_dx;const fdrV=d.fdr_dx==null?null:d.fdr_dx;
     const qw=qfnV==null?0:(clamp(qfnV,0,0.95)/0.95)*230;
     const fw=fdrV==null?0:(clamp(fdrV,0,0.95)/0.95)*230;
     const col=d.sev===5?'#ff7a7a':d.sev===3?'#ffd166':'#ffb454';
-    s+=`<text x="14" y="${y+rowH/2+4}" font-size="11.5" fill="var(--ink)">${d.unit}</text>`;
+    s+=`<text x="14" y="${y+rowH/2+4}" font-size="11.5" fill="var(--ink)">${biT(d.unit, DX_LBL(d.unit))}</text>`;
     s+=`<rect x="330" y="${y+rowH/2-6}" width="230" height="12" rx="4" fill="#1c2740"/>`;
     if(qfnV!=null) s+=`<rect x="330" y="${y+rowH/2-6}" width="${qw}" height="12" rx="4" fill="${col}" opacity="0.85"/>`;
     s+=`<text x="568" y="${y+rowH/2+4}" font-size="10.5" fill="var(--ink)" font-family="monospace">${qfnV==null?'—':fmtP(qfnV)}</text>`;
@@ -2711,18 +2759,18 @@ function renderOov(){
   const svg=document.getElementById('oov-bars');const W=1100,H=560;
   const data=DATA.oov;const mx=Math.max(...data.map(d=>d.n));
   const rowH=Math.min(20,(H-32)/data.length);let s='';
-  s+=`<text x="14" y="16" font-size="11.5" fill="var(--dim)">OOV 词汇</text>`;
-  s+=`<text x="780" y="16" font-size="11.5" fill="var(--dim)">出现行数</text>`;
+  s+=`<text x="14" y="16" font-size="11.5" fill="var(--dim)">${biT('OOV 词汇','OOV terms')}</text>`;
+  s+=`<text x="780" y="16" font-size="11.5" fill="var(--dim)">${biT('出现行数','# rows')}</text>`;
   s+=`<line x1="10" y1="22" x2="${W-10}" y2="22" stroke="#3a4a6a"/>`;
   data.forEach((d,i)=>{const y=28+i*rowH;const w=(d.n/mx)*(W-200);
     const col=d.n>=20?'#ff7a7a':d.n>=10?'#ffd166':'#ffb454';
-    s+=`<text x="14" y="${y+rowH/2+4}" font-size="11.5" fill="var(--ink)">${d.term}</text>`;
+    s+=`<text x="14" y="${y+rowH/2+4}" font-size="11.5" fill="var(--ink)">${biT(d.term, OOV_LBL(d.term))}</text>`;
     s+=`<rect x="180" y="${y+2}" width="${Math.max(w,2)}" height="${rowH-6}" rx="4" fill="${col}" opacity="0.85"/>`;
     s+=`<text x="${182+Math.max(w,2)+6}" y="${y+rowH/2+4}" font-size="11" fill="var(--ink)" font-family="monospace">${d.n}</text>`;});
   svg.innerHTML=s;
   const totRows=data.reduce((a,b)=>a+b.n,0);
   document.getElementById('oov-note').innerHTML=
-    `共 <b>${data.length}</b> 个 OOV 词汇、<b>${totRows}</b> 行纠正短语。最高频为 <b>左心室高电压（${data[0].n} 行）</b>、<b>胸导联R波上升不良（${data[1].n} 行）</b>。这些是数据库词汇表的<b style="color:var(--bad)">设计缺口</b>：任何涉及左心室高电压、起搏器判断、PtfV1 增大或部位特异低电压的模型，用这个数据库都<b>无法学到</b>。`;
+    `${bi('共','In total')} <b>${data.length}</b> ${bi('个 OOV 词汇','OOV terms')}、<b>${totRows}</b> ${bi('行纠正短语','correction phrases')}。${bi('最高频为','Most frequent')} <b>${bi('左心室高电压','LV high voltage')}（${data[0].n} ${bi('行','rows')}）</b>、<b>${bi('胸导联R波上升不良','Poor R-wave progression (precordial)')}（${data[1].n} ${bi('行','rows')}）</b>。${bi('这些是数据库词汇表的设计缺口：任何涉及左心室高电压、起搏器判断、PtfV1 增大或部位特异低电压的模型，用这个数据库都无法学到','These are design gaps in the DB vocabulary: any model involving LV high voltage, pacemaker judgment, PtfV1 enlargement, or region-specific low voltage cannot learn it from this DB')}。`;
 }
 function renderCoocHeat(){
   const svg=document.getElementById('cooc-heat');const W=1100,H=480;
@@ -2732,8 +2780,8 @@ function renderCoocHeat(){
   const pl=180,pr=20,pt=20,pb=20;const cw=(W-pl-pr)/adds.length,ch=(H-pt-pb)/dels.length;
   let s='';
   // 轴标签
-  adds.forEach((a,j)=>{const x=pl+j*cw+cw/2;s+=`<text x="${x}" y="${H-4}" font-size="10" fill="var(--dim)" text-anchor="middle" transform="rotate(-30 ${x} ${H-4})">${a}</text>`;});
-  dels.forEach((d,i)=>{const y=pt+i*ch+ch/2+3;s+=`<text x="${pl-6}" y="${y}" font-size="10.5" fill="var(--dim)" text-anchor="end">${d}</text>`;});
+  adds.forEach((a,j)=>{const x=pl+j*cw+cw/2;s+=`<text x="${x}" y="${H-4}" font-size="10" fill="var(--dim)" text-anchor="middle" transform="rotate(-30 ${x} ${H-4})">${biT(a, DX_LBL(a))}</text>`;});
+  dels.forEach((d,i)=>{const y=pt+i*ch+ch/2+3;s+=`<text x="${pl-6}" y="${y}" font-size="10.5" fill="var(--dim)" text-anchor="end">${biT(d, DX_LBL(d))}</text>`;});
   // 格子
   for(let i=0;i<dels.length;i++) for(let j=0;j<adds.length;j++){
     const n=map.get(dels[i]+'|'+adds[j])||0;
@@ -2746,10 +2794,10 @@ function renderCoocHeat(){
       data-d="${encodeURIComponent(dels[i])}" data-a="${encodeURIComponent(adds[j])}" data-n="${n}"/>`;
     if(n>=8) s+=`<text x="${x+cw/2}" y="${y+ch/2+3.5}" font-size="9.5" fill="#1f2a3a" font-family="monospace" text-anchor="middle" font-weight="700">${n}</text>`;
   }
-  s+=`<text x="14" y="14" font-size="11" fill="var(--dim)">纵轴 = 数据库被删标签（前 15 位） · 横轴 = 专家新增标签（前 15 位） · 颜色=共现次数</text>`;
+  s+=`<text x="14" y="14" font-size="11" fill="var(--dim)">${biT('纵轴 = 数据库被删标签（前 15 位） · 横轴 = 专家新增标签（前 15 位） · 颜色=共现次数','Y = deleted DB labels (top 15) · X = expert-added labels (top 15) · color = co-occurrence count')}</text>`;
   svg.innerHTML=s;
   svg.querySelectorAll('rect[data-n]').forEach(r=>r.onmousemove=e=>showTip(
-    `<b>${decodeURIComponent(r.dataset.d)}</b> → <b>${decodeURIComponent(r.dataset.a)}</b><br>共现 <b style="color:var(--bad)">${r.dataset.n}</b> 次`,e));
+    `<b>${decodeURIComponent(r.dataset.d)}</b> → <b>${decodeURIComponent(r.dataset.a)}</b><br>${bi('共现','Co-occur')} <b style="color:var(--bad)">${r.dataset.n}</b> ${bi('次','times')}`,e));
   svg.querySelectorAll('rect[data-n]').forEach(r=>r.onmouseleave=hideTip);
 }
 
@@ -2774,27 +2822,27 @@ function renderDeriveLab(){
       = <b style="color:var(--warn)">${qfp.toFixed(4)}</b></div>
     <div><b style="color:var(--pri)">Se<sub>真</sub></b> = Se<sub>app</sub>(1−qfn) + (1−Sp<sub>app</sub>)qfn
       = ${S.se_app.toFixed(2)}×${(1-S.qfn).toFixed(2)} + ${(1-S.sp_app).toFixed(2)}×${S.qfn.toFixed(2)}
-      = <b style="color:var(--good)">${a.se_t.toFixed(3)}</b></div>
+      = <b style="color:var(--pri)">${a.se_t.toFixed(3)}</b></div>
     <div><b style="color:var(--pri)">Sp<sub>真</sub></b> = Sp<sub>app</sub>(1−qfp) + (1−Se<sub>app</sub>)qfp
       = ${S.sp_app.toFixed(2)}×${(1-qfp).toFixed(2)} + ${(1-S.se_app).toFixed(2)}×${qfp.toFixed(2)}
-      = <b style="color:var(--good)">${a.sp_t.toFixed(3)}</b></div>
+      = <b style="color:var(--pri)">${a.sp_t.toFixed(3)}</b></div>
     <div><b style="color:var(--pri)">PPV<sub>真</sub></b> = Se<sub>真</sub>·π / (Se<sub>真</sub>·π + (1−Sp<sub>真</sub>)·(1−π))
-      = <b style="color:var(--good)">${a.tru.PPV.toFixed(3)}</b></div>
+      = <b style="color:var(--pri)">${a.tru.PPV.toFixed(3)}</b></div>
     <div><b style="color:var(--pri)">NPV<sub>真</sub></b> = Sp<sub>真</sub>·(1−π) / (Sp<sub>真</sub>·(1−π) + (1−Se<sub>真</sub>)·π)
-      = <b style="color:var(--good)">${a.tru.NPV.toFixed(3)}</b></div>
+      = <b style="color:var(--pri)">${a.tru.NPV.toFixed(3)}</b></div>
     <div><b style="color:var(--pri)">F1<sub>真</sub></b> = 2·PPV<sub>真</sub>·Se<sub>真</sub> / (PPV<sub>真</sub>+Se<sub>真</sub>)
-      = <b style="color:var(--good)">${a.tru.F1.toFixed(3)}</b></div>
+      = <b style="color:var(--pri)">${a.tru.F1.toFixed(3)}</b></div>
     <div><b style="color:var(--pri)">AUC<sub>真</sub></b> = Φ((Φ⁻¹(Se<sub>真</sub>)+Φ⁻¹(Sp<sub>真</sub>))/√2)
-      = <b style="color:var(--good)">${a.tru.AUC.toFixed(3)}</b></div>`;
+      = <b style="color:var(--pri)">${a.tru.AUC.toFixed(3)}</b></div>`;
   // 输出层
   const O = document.getElementById('dl-outputs');
   O.innerHTML = `
-    <div>Se<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.Se.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.Se.toFixed(3)}</span></div>
-    <div>Sp<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.Sp.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.Sp.toFixed(3)}</span></div>
-    <div>PPV<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.PPV.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.PPV.toFixed(3)}</span></div>
-    <div>NPV<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.NPV.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.NPV.toFixed(3)}</span></div>
-    <div>F1<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.F1.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.F1.toFixed(3)}</span></div>
-    <div>AUC<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.AUC.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;衰减 −${a.att.AUC.toFixed(3)}</span></div>`;
+    <div>Se<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.Se.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;${bi('衰减','decay')} −${a.att.Se.toFixed(3)}</span></div>
+    <div>Sp<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.Sp.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;${bi('衰减','decay')} −${a.att.Sp.toFixed(3)}</span></div>
+    <div>PPV<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.PPV.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;${bi('衰减','decay')} −${a.att.PPV.toFixed(3)}</span></div>
+    <div>NPV<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.NPV.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;${bi('衰减','decay')} −${a.att.NPV.toFixed(3)}</span></div>
+    <div>F1<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.F1.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;${bi('衰减','decay')} −${a.att.F1.toFixed(3)}</span></div>
+    <div>AUC<sub>真</sub>：<span style="float:right;color:#5fe3a1;font-weight:700;">${a.tru.AUC.toFixed(3)}</span><span style="float:right;color:#7c7563;padding-right:8px;">&nbsp;${bi('衰减','decay')} −${a.att.AUC.toFixed(3)}</span></div>`;
   // 2x2 计数
   const Npos = S.pi * DL_N, Nneg = (1-S.pi) * DL_N;
   const TP_a = S.se_app * Npos, FN_a = (1-S.se_app) * Npos;
@@ -2807,43 +2855,43 @@ function renderDeriveLab(){
     <div>
       <div style="text-align:center;font-weight:700;color:var(--sky);font-size:13px;margin-bottom:6px;">${title}</div>
       <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;">
-        <tr><th></th><th style="background:#0c1a2e;color:#4cc7ff;padding:6px;border:1px solid #1f2c45;">${col}阳性 (Y)</th><th style="background:#0c1a2e;color:#4cc7ff;padding:6px;border:1px solid #1f2c45;">${col}阴性 (N)</th><th style="background:#0c1a2e;color:#ffb454;padding:6px;border:1px solid #1f2c45;">合计</th></tr>
-        <tr><th style="background:#0c1a2e;color:#ff7ab6;padding:6px;border:1px solid #1f2c45;">预测 1</th>
+        <tr><th></th><th style="background:#0c1a2e;color:#4cc7ff;padding:6px;border:1px solid #1f2c45;">${bi(col+'阳性 (Y)',(col==='假金标准'?'Fake-gold std':'True-gold std')+' positive (Y)')}</th><th style="background:#0c1a2e;color:#4cc7ff;padding:6px;border:1px solid #1f2c45;">${bi(col+'阴性 (N)',(col==='假金标准'?'Fake-gold std':'True-gold std')+' negative (N)')}</th><th style="background:#0c1a2e;color:#ffb454;padding:6px;border:1px solid #1f2c45;">${bi('合计','Total')}</th></tr>
+        <tr><th style="background:#0c1a2e;color:#ff7ab6;padding:6px;border:1px solid #1f2c45;">${bi('预测 1','Predicted 1')}</th>
           <td style="padding:8px;border:1px solid #1f2c45;text-align:center;background:rgba(95,227,161,0.18);color:#a8f0c8;font-weight:700;">TP=${fmtN(TP)}</td>
           <td style="padding:8px;border:1px solid #1f2c45;text-align:center;background:rgba(255,87,87,0.18);color:#ffb0b0;font-weight:700;">FP=${fmtN(FP)}</td>
           <td style="padding:6px;border:1px solid #1f2c45;text-align:center;color:#c2b89c;">${fmtN(TP+FP)}</td></tr>
-        <tr><th style="background:#0c1a2e;color:#ff7ab6;padding:6px;border:1px solid #1f2c45;">预测 0</th>
+        <tr><th style="background:#0c1a2e;color:#ff7ab6;padding:6px;border:1px solid #1f2c45;">${bi('预测 0','Predicted 0')}</th>
           <td style="padding:8px;border:1px solid #1f2c45;text-align:center;background:rgba(255,87,87,0.18);color:#ffb0b0;font-weight:700;">FN=${fmtN(FN)}</td>
           <td style="padding:8px;border:1px solid #1f2c45;text-align:center;background:rgba(95,227,161,0.18);color:#a8f0c8;font-weight:700;">TN=${fmtN(TN)}</td>
           <td style="padding:6px;border:1px solid #1f2c45;text-align:center;color:#c2b89c;">${fmtN(FN+TN)}</td></tr>
-        <tr><th style="background:#0c1a2e;color:#ffb454;padding:6px;border:1px solid #1f2c45;">合计</th>
+        <tr><th style="background:#0c1a2e;color:#ffb454;padding:6px;border:1px solid #1f2c45;">${bi('合计','Total')}</th>
           <td style="padding:6px;border:1px solid #1f2c45;text-align:center;color:#c2b89c;">${fmtN(TP+FN)}</td>
           <td style="padding:6px;border:1px solid #1f2c45;text-align:center;color:#c2b89c;">${fmtN(FP+TN)}</td>
           <td style="padding:6px;border:1px solid #1f2c45;text-align:center;color:#f5efdc;">${fmtN(DL_N)}</td></tr>
         <tr><td colspan="4" style="padding:6px;color:#c2b89c;border-top:1px dashed rgba(76,199,255,0.4);">Se = TP/(TP+FN) = <b style="color:#a8f0c8">${Se.toFixed(3)}</b>　Sp = TN/(TN+FP) = <b style="color:#a8f0c8">${Sp.toFixed(3)}</b></td></tr>
       </table></div>`;
-  tb.innerHTML = tab('账面（按假金标准 = DB 标签）','假金标准', TP_a, FP_a, FN_a, TN_a, S.se_app, S.sp_app)
-    + tab('真金标准（按专家最终判定）','真金标准', TP_t, FP_t, FN_t, TN_t, a.se_t, a.sp_t);
+  tb.innerHTML = tab(bi('账面（按假金标准 = DB 标签）','Apparent (by fake-gold = DB labels)'),'假金标准', TP_a, FP_a, FN_a, TN_a, S.se_app, S.sp_app)
+    + tab(bi('真金标准（按专家最终判定）','True-gold (by expert final judgement)'),'真金标准', TP_t, FP_t, FN_t, TN_t, a.se_t, a.sp_t);
   // 公式：所有 6 个指标 + 定义
   document.getElementById('dl-metric-table').innerHTML = `
     <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:8px;font-size:11.5px;">
       <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
-        <b style="color:#5fe3a1">Se（灵敏度）</b> = TP/(TP+FN) = 真实阳性中被正确预测的比例
+        <b style="color:#5fe3a1">${bi('Se（灵敏度）','Se (sensitivity)')}</b> = TP/(TP+FN) = ${bi('真实阳性中被正确预测的比例','share of true positives correctly predicted')}
       </div>
       <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
-        <b style="color:#5fe3a1">Sp（特异度）</b> = TN/(TN+FP) = 真实阴性中被正确预测的比例
+        <b style="color:#5fe3a1">${bi('Sp（特异度）','Sp (specificity)')}</b> = TN/(TN+FP) = ${bi('真实阴性中被正确预测的比例','share of true negatives correctly predicted')}
       </div>
       <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
-        <b style="color:#5fe3a1">PPV（阳性预测值）</b> = TP/(TP+FP) = 预测阳性中真阳性的比例
+        <b style="color:#5fe3a1">${bi('PPV（阳性预测值）','PPV (positive predictive value)')}</b> = TP/(TP+FP) = ${bi('预测阳性中真阳性的比例','precision: true positives among predicted positives')}
       </div>
       <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
-        <b style="color:#5fe3a1">NPV（阴性预测值）</b> = TN/(TN+FN) = 预测阴性中真阴性的比例
+        <b style="color:#5fe3a1">${bi('NPV（阴性预测值）','NPV (negative predictive value)')}</b> = TN/(TN+FN) = ${bi('预测阴性中真阴性的比例','true negatives among predicted negatives')}
       </div>
       <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
-        <b style="color:#5fe3a1">F1</b> = 2·PPV·Se / (PPV+Se) = 精确率与召回率的调和均值
+        <b style="color:#5fe3a1">${bi('F1','F1')}</b> = 2·PPV·Se / (PPV+Se) = ${bi('精确率与召回率的调和均值','harmonic mean of precision and recall')}
       </div>
       <div style="background:rgba(95,227,161,0.08);border:1px solid rgba(95,227,161,0.3);border-radius:9px;padding:8px 10px;">
-        <b style="color:#5fe3a1">AUC</b> = Φ((Φ⁻¹(Se)+Φ⁻¹(Sp))/√2) = 双正态模型下 ROC 曲线下面积
+        <b style="color:#5fe3a1">${bi('AUC','AUC')}</b> = Φ((Φ⁻¹(Se)+Φ⁻¹(Sp))/√2) = ${bi('双正态模型下 ROC 曲线下面积','ROC area under bivariate-normal model')}
       </div>
     </div>`;
   // 三层状态图
@@ -2880,15 +2928,15 @@ function renderDeriveLab(){
   // 真金标准 N 中：模型 1=FP_t; 模型 0=TN_t
   let s='';
   // 标题
-  s+=`<text x="180" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#ffb454">假金标准（DB 原始标签）</text>`;
-  s+=`<text x="550" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#ff7ab6">模型预测</text>`;
-  s+=`<text x="920" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#5fe3a1">真金标准（专家判定）</text>`;
+  s+=`<text x="180" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#ffb454">${biT('假金标准（DB 原始标签）','Fake-gold std (raw DB labels)')}</text>`;
+  s+=`<text x="550" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#ff7ab6">${biT('模型预测','Model prediction')}</text>`;
+  s+=`<text x="920" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#5fe3a1">${biT('真金标准（专家判定）','True-gold std (expert judgement)')}</text>`;
   // 第一行：Y / 预测=1 / Y
-  s+=drawCell(100,55,140,40,'DB 标签=阳 (Y)',fmtN(db_pos_count),'#ffb454',`=真阳×${(1-S.qfn).toFixed(2)} + 假阳${S.fdr.toFixed(2)}`);
+  s+=drawCell(100,55,140,40,biT('DB 标签=阳 (Y)','DB label = pos (Y)'),fmtN(db_pos_count),'#ffb454',biT('=真阳×'+(1-S.qfn).toFixed(2)+' + 假阳'+S.fdr.toFixed(2),'=true-pos×'+(1-S.qfn).toFixed(2)+' + false-pos '+S.fdr.toFixed(2)));
   s+=`<line x1="170" y1="55" x2="450" y2="55" stroke="#ff7ab6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>`;
-  s+=drawCell(550,55,140,40,'预测=1 (阳)',fmtN(pred_pos_count),'#ff7ab6',`=TP_a + FP_a`);
+  s+=drawCell(550,55,140,40,biT('预测=1 (阳)','Pred = 1 (pos)'),fmtN(pred_pos_count),'#ff7ab6',`=TP_a + FP_a`);
   s+=`<line x1="620" y1="55" x2="820" y2="55" stroke="#5fe3a1" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr2)"/>`;
-  s+=drawCell(920,55,140,40,'专家=阳 (Y)',fmtN(Npos),'#5fe3a1',`真实阳性`);
+  s+=drawCell(920,55,140,40,biT('专家=阳 (Y)','Expert = pos (Y)'),fmtN(Npos),'#5fe3a1',biT('真实阳性','true positives'));
   // 内部细分：假金标准 Y 行内，TP_a vs FN_a
   s+=drawCell(40,100,75,32,'TP_a',fmtN(TP_a),'#ffb454','');
   s+=`<text x="78" y="105" text-anchor="middle" font-size="10" fill="var(--dim)">∪</text>`;
@@ -2906,10 +2954,10 @@ function renderDeriveLab(){
   s+=`<text x="940" y="135" text-anchor="middle" font-size="9" fill="var(--dim2)">Se_真=${a.se_t.toFixed(2)}</text>`;
   // 第二行：N / 预测=0 / N
   s+=`<line x1="170" y1="195" x2="450" y2="195" stroke="#ff7ab6" stroke-width="1.5" stroke-dasharray="4,3"/>`;
-  s+=drawCell(100,195,140,40,'DB 标签=阴 (N)',fmtN(db_neg_count),'#ffb454',`=真阴×${(1-S.fdr).toFixed(2)} + 漏报${S.qfn.toFixed(2)}`);
-  s+=drawCell(550,195,140,40,'预测=0 (阴)',fmtN(pred_neg_count),'#ff7ab6',`=FN_a + TN_a`);
+  s+=drawCell(100,195,140,40,biT('DB 标签=阴 (N)','DB label = neg (N)'),fmtN(db_neg_count),'#ffb454',biT('=真阴×'+(1-S.fdr).toFixed(2)+' + 漏报'+S.qfn.toFixed(2),'=true-neg×'+(1-S.fdr).toFixed(2)+' + missed '+S.qfn.toFixed(2)));
+  s+=drawCell(550,195,140,40,biT('预测=0 (阴)','Pred = 0 (neg)'),fmtN(pred_neg_count),'#ff7ab6',`=FN_a + TN_a`);
   s+=`<line x1="620" y1="195" x2="820" y2="195" stroke="#5fe3a1" stroke-width="1.5" stroke-dasharray="4,3"/>`;
-  s+=drawCell(920,195,140,40,'专家=阴 (N)',fmtN(Nneg),'#5fe3a1',`真实阴性`);
+  s+=drawCell(920,195,140,40,biT('专家=阴 (N)','Expert = neg (N)'),fmtN(Nneg),'#5fe3a1',biT('真实阴性','true negatives'));
   s+=drawCell(40,240,75,32,'TN_a',fmtN(TN_a),'#5fe3a1','');
   s+=drawCell(120,240,75,32,'FP_a',fmtN(FP_a),'#ff5757','');
   s+=`<line x1="40" y1="255" x2="120" y2="255" stroke="#ffb454" stroke-width="0.5"/>`;
@@ -2994,7 +3042,7 @@ function renderM2lite(){
   kpi.innerHTML=order.map(k=>`<div class="tile ${palette[k]}"><div class="v" style="font-size:18px">${m[k].toFixed(2)}</div><div class="l">${k} 账面</div></div>`).join('');
   let tier=S.c>=0.95?'顶尖':S.c>=0.85?'优秀':S.c>=0.7?'良好':'勉强';
   document.getElementById('m2-note').innerHTML=
-    `当前模型潜力档位：<b>${tier}（c=${S.c.toFixed(2)}）</b>。右侧柱状为<b style="color:var(--acc)">账面（按假金标准）</b> vs <b style="color:var(--good)">真金标准</b>，衰减 = 账面 − 真金标准。`;
+    `当前模型潜力档位：<b>${tier}（c=${S.c.toFixed(2)}）</b>。右侧柱状为<b style="color:var(--acc)">账面（按假金标准）</b> vs <b style="color:var(--pri)">真金标准</b>，衰减 = 账面 − 真金标准。`;
   renderRadar();
 }
 
@@ -3043,7 +3091,7 @@ function renderRadar(){
   // 描述文字
   const worst=axes.slice().sort((k1,k2)=>a.att[k2]-a.att[k1])[0];
   document.getElementById('radar-note').innerHTML=
-    `<b style="color:var(--acc)">账面</b>六指标均较高（模型按<b>假金标准</b>评估），<b style="color:var(--good)">真金标准</b>轮廓整体内缩；衰减最大的指标为 <b style="color:var(--pri)">${worst}</b>（−${a.att[worst].toFixed(2)}）。当前 c=${S.c.toFixed(2)} · qfn=${fmtP(S.qfn)} · FDR=${fmtP(S.fdr)}。`;
+    `<b style="color:var(--acc)">${bi('账面','Apparent')}</b>${bi('六指标均较高（模型按','6 metrics score high (model judged by')}<b>${bi('假金标准','fake-gold std')}</b>${bi('评估），','); ')}<b style="color:var(--pri)">${bi('真金标准','true-gold std')}</b>${bi('轮廓整体内缩；衰减最大的指标为','outline shrinks inward; largest decay metric:')} <b style="color:var(--pri)">${worst}</b>（−${a.att[worst].toFixed(2)}）。${bi('当前','Current')} c=${S.c.toFixed(2)} · qfn=${fmtP(S.qfn)} · FDR=${fmtP(S.fdr)}。`;
 }
 
 /* ====== 噪声滑块 ====== */
@@ -3107,7 +3155,7 @@ function renderM3(){
   const order=['Se','Sp','PPV','NPV','F1','AUC'];const W=720,H=380,px=58,bw=W-px-26,rowH=(H-50)/order.length;
   let s='';
   // 顶部说明
-  s+=`<text x="${px}" y="14" font-size="11" fill="var(--dim)">每行：左柱<tspan fill="#ff7ab6" font-weight="700"> 账面（假金标准）</tspan> · 右柱<tspan fill="#5fe3a1" font-weight="700"> 真金标准</tspan> · 右侧<tspan fill="#ff5757" font-weight="700"> −衰减</tspan></text>`;
+  s+=`<text x="${px}" y="14" font-size="11" fill="var(--dim)">${biT('每行：左柱','Each row: left bar')}<tspan fill="#ff7ab6" font-weight="700"> ${biT('账面（假金标准）','apparent (fake-gold)')}</tspan> · ${biT('右柱','right bar')}<tspan fill="#5fe3a1" font-weight="700"> ${biT('真金标准','true-gold')}</tspan> · ${biT('右侧','right')}<tspan fill="#ff5757" font-weight="700"> ${biT('−衰减','−decay')}</tspan></text>`;
   order.forEach((k,i)=>{
     const y=22+i*rowH;
     const wA=(clamp(a.app[k],0,1))*bw;const wT=(clamp(a.tru[k],0,1))*bw;
@@ -3228,7 +3276,8 @@ function runSim(mode){
 ['bayes','boot'].forEach(m=>{const el=document.getElementById('n-'+m);el.onchange=()=>{
   el.value=Math.max(50,Math.min(2000,parseInt(el.value)||500));
 };});
-function drawHist(){
+function drawHist(lang){
+  lang=lang||LR('box-hist');
   if(!histData)return;const cv=document.getElementById('hist'),x=cv.getContext('2d');
   const W=cv.width,H=cv.height;x.clearRect(0,0,W,H);
   const v=histData.vals;const min=Math.min(...v,histData.pointEst),max=Math.max(...v,histData.pointEst);
@@ -3247,11 +3296,12 @@ function drawHist(){
   const px=(histData.pointEst-lo)/span*W;
   x.strokeStyle='#ffffff';x.lineWidth=2.5;x.setLineDash([5,4]);x.beginPath();
   x.moveTo(px,10);x.lineTo(px,H-30);x.stroke();x.setLineDash([]);
-  x.fillStyle='#fff';x.font='12px monospace';x.fillText('点估计 '+histData.pointEst.toFixed(3),Math.min(px+6,W-150),22);
+  x.fillStyle='#fff';x.font='12px monospace';x.fillText((lang==='en'?'Point est. ':'点估计 ')+histData.pointEst.toFixed(3),Math.min(px+6,W-150),22);
   x.fillStyle=histData.mode==='bayes'?'#ffb454':'#4cc7ff';
   x.font='bold 12px monospace';
-  x.fillText((histData.mode==='bayes'?'贝叶斯均值 ':'Bootstrap均值 ')+histData.mean.toFixed(3),12,H-10);
+  x.fillText((histData.mode==='bayes'?(lang==='en'?'Bayes mean ':'贝叶斯均值 '):(lang==='en'?'Bootstrap mean ':'Bootstrap均值 '))+histData.mean.toFixed(3),12,H-10);
 }
+regRedraw('box-hist', l=>drawHist(l));
 document.getElementById('run-bayes').onclick=()=>runSim('bayes');
 document.getElementById('run-boot').onclick=()=>runSim('boot');
 document.getElementById('clear-hist').onclick=()=>{histData=null;
@@ -3282,11 +3332,11 @@ function renderM4(){
   s+=`<path d="${path}" fill="none" stroke="#ffb454" stroke-width="2.5"/>`;
   const clean=attenuate(c,c,pi,0,fdr).tru[metric];
   s+=`<line x1="${px}" y1="${Y(clean-delta)}" x2="${px+bw}" y2="${Y(clean-delta)}" stroke="#ffd166" stroke-dasharray="5,4"/>`;
-  s+=`<text x="${px+bw-4}" y="${Y(clean-delta)-5}" font-size="10.5" fill="#ffd166" text-anchor="end">安全下限 ${((clean-delta)).toFixed(2)}</text>`;
+  s+=`<text x="${px+bw-4}" y="${Y(clean-delta)-5}" font-size="10.5" fill="#ffd166" text-anchor="end">${biT('安全下限 ','Safety floor ')}${((clean-delta)).toFixed(2)}</text>`;
   s+=`<line x1="${X(qmax)}" y1="${py}" x2="${X(qmax)}" y2="${py+bh}" stroke="#5fe3a1" stroke-dasharray="4,3"/>`;
-  s+=`<text x="${X(qmax)}" y="${py+12}" font-size="10.5" fill="#5fe3a1" text-anchor="middle">qfn_max ${fmtP(qmax)}</text>`;
+  s+=`<text x="${X(qmax)}" y="${py+12}" font-size="10.5" fill="#5fe3a1" text-anchor="middle">${biT('qfn_max ','')}${fmtP(qmax)}</text>`;
   s+=`<line x1="${X(M.qfn_s)}" y1="${py}" x2="${py+bh}" x2="${X(M.qfn_s)}" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="6,4" opacity="0.85"/>`;
-  s+=`<text x="${X(M.qfn_s)}" y="${py+bh+16}" font-size="10.5" fill="#fff" text-anchor="middle">实证 ${fmtP(M.qfn_s)}</text>`;
+  s+=`<text x="${X(M.qfn_s)}" y="${py+bh+16}" font-size="10.5" fill="#fff" text-anchor="middle">${biT('实证 ','Observed ')}${fmtP(M.qfn_s)}</text>`;
   s+=`<line x1="${px}" y1="${py+bh}" x2="${px+bw}" y2="${py+bh}" stroke="#3a4a6a"/>`;
   s+=`<line x1="${px}" y1="${py}" x2="${px}" y2="${py+bh}" stroke="#3a4a6a"/>`;
   for(let i=0;i<=5;i++){const gx=px+bw*i/5;s+=`<text x="${gx}" y="${py+bh+16}" font-size="9.5" fill="var(--dim)" text-anchor="middle">${(i*10)}%</text>`;}
@@ -3300,7 +3350,7 @@ function renderM4(){
      <div class="tile bad"><div class="v" style="font-size:18px">${fmtP(M.qfn_s)}</div><div class="l">当前实证漏标率</div></div>
      <div class="tile warn"><div class="v" style="font-size:18px">${ratio.toFixed(1)}×</div><div class="l">超出安全线倍数</div></div>`;
   document.getElementById('m4-note').innerHTML=
-    `若把数据库漏标率从实证 <b>${fmtP(M.qfn_s)}</b> 压到 <b style="color:var(--good)">${fmtP(qmax)}</b> 以下，模型在<b>真金标准</b>下的 ${metric} 损失将 ≤ Δ=${delta.toFixed(2)}。
+    `若把数据库漏标率从实证 <b>${fmtP(M.qfn_s)}</b> 压到 <b style="color:var(--pri)">${fmtP(qmax)}</b> 以下，模型在<b>真金标准</b>下的 ${metric} 损失将 ≤ Δ=${delta.toFixed(2)}。
      当前实证漏标率已是安全阈值的 <b>${ratio.toFixed(1)} 倍</b>——这是模型训练的硬瓶颈。`;
   renderCPlot();
 }
@@ -3313,14 +3363,14 @@ function renderCPlot(){
     path+=(c===0.5?'M':'L')+X(c)+' '+Y(q)+' ';}
   s+=`<path d="${path}" fill="none" stroke="#5fe3a1" stroke-width="2.5"/>`;
   s+=`<circle cx="${X(S.c4)}" cy="${Y(M.qfn_s)}" r="6" fill="#ff7a7a"/>`;
-  s+=`<text x="${X(S.c4)}" y="${Y(M.qfn_s)-12}" font-size="11" fill="#ff7a7a" text-anchor="middle">实证漏标率</text>`;
+  s+=`<text x="${X(S.c4)}" y="${Y(M.qfn_s)-12}" font-size="11" fill="#ff7a7a" text-anchor="middle">${biT('实证漏标率','Observed miss rate')}</text>`;
   s+=`<line x1="${px}" y1="${Y(M.qfn_s)}" x2="${px+bw}" y2="${Y(M.qfn_s)}" stroke="#ff7a7a" stroke-dasharray="5,4" opacity="0.6"/>`;
   s+=`<line x1="${px}" y1="${py+bh}" x2="${px+bw}" y2="${py+bh}" stroke="#3a4a6a"/>`;
   s+=`<line x1="${px}" y1="${py}" x2="${px}" y2="${py+bh}" stroke="#3a4a6a"/>`;
   for(let i=0;i<=5;i++){const gx=px+bw*i/5;s+=`<text x="${gx}" y="${py+bh+16}" font-size="10" fill="var(--dim)" text-anchor="middle">${(0.5+i*0.1).toFixed(1)}</text>`;}
   for(let i=0;i<=5;i++){const gy=py+bh-i*bh/5;s+=`<text x="${px-6}" y="${gy+3}" font-size="9.5" fill="var(--dim)" text-anchor="end">${(i*10)}%</text>`;}
-  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="var(--dim)" text-anchor="middle">模型能力 c</text>`;
-  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="var(--dim)" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">qfn_max（可容忍漏标率）</text>`;
+  s+=`<text x="${px+bw/2}" y="${H-6}" font-size="11" fill="var(--dim)" text-anchor="middle">${biT('模型能力 c','Model capability c')}</text>`;
+  s+=`<text x="14" y="${py+bh/2}" font-size="11" fill="var(--dim)" text-anchor="middle" transform="rotate(-90 14 ${py+bh/2})">${biT('qfn_max（可容忍漏标率）','qfn_max (tolerable miss rate)')}</text>`;
   svg.innerHTML=s;
 }
 function bindM4(id,key,disp,fmt){const el=document.getElementById(id);
@@ -3412,7 +3462,7 @@ function pdBarsH(items,h,opt){ /* items:[{label,val,col,sub}] val in 0..1 */
   c.moveTo(padL+0.5,top-3);c.lineTo(padL+0.5,top+items.length*(barH+gap)-gap+3);c.stroke();
   items.forEach((it,i)=>{
     const y=top+i*(barH+gap)+barH/2;
-    pdText(c,padL-8,y,it.label,PD_TXT,12,'right');
+    pdText(c,padL-8,y,DX_LBL(it.label),PD_TXT,12,'right');
     let bw=plotW*Math.min(1,Math.max(0,it.val/maxv));
     const isZero=!(it.val>0);
     if(isZero){ bw=0; }
@@ -3459,7 +3509,8 @@ function pdInit(name){
   sel.onchange=pdRender;document.getElementById('pd-dx').onchange=pdRender;
   pdRender();
 }
-function pdRender(){
+function pdRender(lang){
+  lang=lang||LR('box-pd');const z=(a,b)=>lang==='en'?b:a;
   const v=document.getElementById('pd-view').value;
   const dxw=document.getElementById('pd-dxwrap');
   dxw.style.display=(v==='acc_trend')?'flex':'none';
@@ -3470,32 +3521,32 @@ function pdRender(){
     const top=D.slice(0,12);
     pdBarsH(top.map(d=>({label:d.name,val:d.qfn,col:PD_COL.bad,
       sub:(d.qfn*100).toFixed(0)+'% · 真敏'+(d.se_true*100).toFixed(0)+'%'})),430);
-    sub.innerHTML='漏标率 = 真正患病却被标成「正常」的比例';
+    sub.innerHTML=z("漏标率 = 真正患病却被标成「正常」的比例","Miss rate = truly-ill patients labeled as normal");
     note.innerHTML='<b>临床解读：</b>这些诊断被系统性<b>漏标</b>——模型在含噪标签上训练后，会学到「不报这些病」的偏置，'+
       '真实世界灵敏度（真金标准）被严重压低（右侧「真敏」列）。房颤、心梗等漏标会直接延误救治。';
   }else if(v==='fdr_top'){
     const top=PD_DER.slice().sort((a,b)=>b.fdr-a.fdr).slice(0,12);
     pdBarsH(top.map(d=>({label:d.name,val:d.fdr,col:PD_COL.warn,
       sub:(d.fdr*100).toFixed(0)+'% · 标签准'+(d.ppv*100).toFixed(0)+'%'})),430);
-    sub.innerHTML='误标率 = 被标成某病、其实没病的比例';
+    sub.innerHTML=z("误标率 = 被标成某病、其实没病的比例","Over-call rate = labeled as a disease but actually healthy");
     note.innerHTML='<b>临床解读：</b>误标率高的诊断属于<b>过度调用</b>（如结构性异常码（ASMI=前间壁心梗/ISC=缺血性ST改变））。'+
       '标签「准确率(PPV)」随之崩塌，模型会频繁报警假阳性，长期削弱临床医生对系统的信任（狼来了效应）。';
   }else if(v==='se_eros'){
     const top=PD_DER.slice().sort((a,b)=>b.dSe-a.dSe).slice(0,12);
     pdBarsH(top.map(d=>({label:d.name,val:d.dSe,col:(d.urg||0)>=4?PD_COL.bad:PD_COL.acc,
       sub:Number.isFinite(d.dSe)?('−'+(d.dSe*100).toFixed(0)+'pp'):'数据缺失'})),430);
-    sub.innerHTML='ΔSe = 账面灵敏度 − 真金标准灵敏度（被噪声掺掉的水分）';
+    sub.innerHTML=z("ΔSe = 账面灵敏度 − 真金标准灵敏度（被噪声掺掉的水分）","Delta Se = apparent minus true-gold sensitivity (water added by noise)");
     note.innerHTML='<b>临床解读：</b>所有条形均为正，说明账面灵敏度<b>全部被高估</b>。'+
       '红色为高危诊断（紧急度≥4），其灵敏度虚高最危险——医生看到的「灵敏度 90%」实际可能只有一半。';
   }else if(v==='acc_trend'){
     const code=document.getElementById('pd-dx').value;
     const d=PD_DER.find(x=>x.code===code)||PD_DER[0];
     const {cv,c,w}=pdCanvas(420);c.clearRect(0,0,w,420);
-    pdText(c,16,20,'「'+d.name+'」真金标准灵敏度随漏标率 qfn 变化（当前 fdr='+(d.fdr*100).toFixed(0)+'%，流行率 π='+(d.prev*100).toFixed(1)+'%）',PD_TXT,13);
+    pdText(c,16,20,'「'+DX_LBL(d.name)+'」'+zWrap('真金标准灵敏度随漏标率 qfn 变化（当前 fdr=','true-gold sensitivity vs miss rate qfn (current fdr=')+(d.fdr*100).toFixed(0)+'%，流行率 π='+(d.prev*100).toFixed(1)+'%）',PD_TXT,13);
     const padL=54,padB=40,padT=34,plotW=w-padL-20,plotH=420-padT-padB;
     pdGridBox(c,padL,padT,plotW,plotH);
     pdText(c,padL-8,padT+plotH/2,'Se_true',PD_DIM,11,'right');
-    pdText(c,padL+plotW/2,420-12,'漏标率 qfn →',PD_DIM,11,'center');
+    pdText(c,padL+plotW/2,420-12,z("漏标率 qfn →","miss rate qfn to the right"),PD_DIM,11,'center');
     const pts=[];for(let q=0;q<=1.0001;q+=0.05){const at=attenuate(d.se,d.sp,d.prev,q,d.fdr);pts.push([q,at.se_true]);}
     c.strokeStyle=PD_COL.good;c.lineWidth=2.5;c.beginPath();
     pts.forEach((p,i)=>{const x=padL+p[0]*plotW,y=padT+(1-p[1])*plotH;i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();
@@ -3507,14 +3558,14 @@ function pdRender(){
       '真实灵敏度沿绿线快速下滑；<b>罕见病（π 小）尤为陡峭</b>——少量漏标即可让真灵敏腰斩。';
   }else if(v==='confid'){
     const {cv,c,w}=pdCanvas(420);c.clearRect(0,0,w,420);
-    pdText(c,16,20,'各诊断标签准确率(PPV)分布 —— 低 PPV = 标签与临床真值脱节',PD_TXT,13);
+    pdText(c,16,20,z("各诊断标签准确率(PPV)分布 —— 低 PPV = 标签与临床真值脱节","PPV distribution across diagnoses - low PPV means labels diverge from clinical truth"),PD_TXT,13);
     const bins=[0,0,0,0];PD_DER.forEach(d=>{if(d.ppv>=0.8)bins[3]++;else if(d.ppv>=0.6)bins[2]++;else if(d.ppv>=0.4)bins[1]++;else bins[0]++;});
     const labels=['<40%','40–60%','60–80%','≥80%'];const cols=[PD_COL.bad,PD_COL.warn,PD_COL.sky,PD_COL.good];
     const bw=w/4;bins.forEach((b,i)=>{const bh=b/Math.max(1,Math.max(...bins))*300;
       c.fillStyle=cols[i];c.fillRect(i*bw+20,370-bh,bw-40,bh);
       pdText(c,i*bw+bw/2,384,labels[i],PD_DIM,11,'center');
       pdText(c,i*bw+bw/2,360-bh,(b+'个'),PD_TXT,12,'center');});
-    pdText(c,16,408,'红色带(<40%)：标签几乎不可信，与双阅「金标准本身都不一致」互为印证',PD_DIM,11);
+    pdText(c,16,408,z("红色带(<40%)：标签几乎不可信，与双阅「金标准本身都不一致」互为印证","Red band (<40%): labels barely trustworthy, matching that even the gold standard disagrees on double-read"),PD_DIM,11);
     const low=PD_DER.filter(d=>d.ppv<0.7).length;
     note.innerHTML='<b>临床解读：</b>共 '+PD_DER.length+' 个诊断中，'+low+' 个标签准确率(PPV)<70%，'+
       '即<b>超过三成的「阳性标签」其实是错的</b>。这与双阅一致性仅 '+(typeof IR!=='undefined'? (IR.rate*100).toFixed(0):'?')+'% 互相印证：'+
@@ -3523,13 +3574,13 @@ function pdRender(){
     const hr=PD_DER.filter(d=>(d.urg||0)>=4).sort((a,b)=>b.qfn-a.qfn);
     pdBarsH(hr.map(d=>({label:d.name,val:d.qfn,col:PD_COL.bad,
       sub:'漏标'+(d.qfn*100).toFixed(0)+'% / 误标'+(d.fdr*100).toFixed(0)+'%'})),Math.max(300,hr.length*30+40));
-    sub.innerHTML='仅纳入紧急度≥4 的高危诊断（心梗、房颤、AVB、预激、起搏等）';
+    sub.innerHTML=z("仅纳入紧急度≥4 的高危诊断（心梗、房颤、AVB、预激、起搏等）","Only urgency>=4 high-risk diagnoses (MI, AFib, AVB, WPW, pacing, etc.)");
     note.innerHTML='<b>临床解读：</b>最该「一个都不能漏」的高危诊断，恰恰漏标率最高。'+
       '例如房颤账面灵敏度看似尚可，实际漏标率(qfn)极高——这类模型的临床部署风险最大，'+
       '必须配合人工复核或要求更高的账面灵敏度阈值。';
   }else if(v==='arch'){
     const {cv,c,w}=pdCanvas(420);c.clearRect(0,0,w,420);
-    pdText(c,16,20,'相同标签噪声下，不同模型架构的「有效 AUC 保留率」（假设情景）',PD_COL.warn,13);
+    pdText(c,16,20,z("相同标签噪声下，不同模型架构的「有效 AUC 保留率」（假设情景）","Effective AUC retention across architectures under same label noise (hypothetical)"),PD_COL.warn,13);
     const archs=[['CNN (ResNet-1D)',0.80],['CNN (深)',0.86],['ViT / Transformer',0.91],['集成 Ensemble',0.95]];
     const aucTrueMean=PD_DER.reduce((s,d)=>s+(Number.isFinite(d.auc_true)?d.auc_true:0),0)/PD_DER.length;
     const aggNoise=Number.isFinite(aucTrueMean)?(1-aucTrueMean):PD_DER.reduce((s,d)=>s+Math.max(d.qfn,d.fdr),0)/PD_DER.length;
@@ -3537,34 +3588,34 @@ function pdRender(){
       const bh=Math.max(0,Math.min(300,eff*300));c.fillStyle=PD_COL.sky;c.fillRect(i*bw+30,370-bh,bw-60,bh);
       pdText(c,i*bw+bw/2,384,a[0],PD_DIM,10,'center');
       pdText(c,i*bw+bw/2,360-bh,(eff*100).toFixed(0)+'%',PD_TXT,12,'center');});
-    pdText(c,16,408,'※ 此为「架构相对鲁棒系数」示意，非本数据集实测；结论：架构只改斜率，改不了标签噪声本身',PD_DIM,10);
+    pdText(c,16,408,z("※ 此为「架构相对鲁棒系数」示意，非本数据集实测；结论：架构只改斜率，改不了标签噪声本身","Illustrative architecture robustness coefficient, not measured on this dataset; conclusion: architecture changes the slope, not the label noise itself"),PD_DIM,10);
     note.innerHTML='<b>方法论提示：</b>换更深的网络或 Transformer 能小幅提升对标签噪声的<b>容忍度</b>，'+
       '但无法消除——因为噪声在<b>标签</b>里，不在<b>模型容量</b>里。最根本的改进仍是清洗标注（见 M5 按标签还原 / 双阅复核）。';
   }else if(v==='ppv'){
     const top=PD_DER.slice().sort((a,b)=>b.ppv-a.ppv).slice(0,14);
     pdBarsH(top.map(d=>({label:d.name,val:d.ppv,col:d.ppv<0.7?PD_COL.warn:PD_COL.good,
       sub:(d.ppv*100).toFixed(0)+'%'})),460);
-    sub.innerHTML='标签准确率 PPV = 标为阳性者中真阳性的比例';
+    sub.innerHTML=z("标签准确率 PPV = 标为阳性者中真阳性的比例","Label accuracy PPV = fraction of predicted-positive that are truly positive");
     note.innerHTML='<b>临床解读：</b>PPV<70%（黄色）的诊断，医生若照单全收会频繁被误导。'+
       '诊断模型应像检验报告一样附带<b>「该标签的可信度」</b>，PPV 低者需系统主动提示「建议人工确认」。';
   }else if(v==='auc_dec'){
     const top=PD_DER.slice().sort((a,b)=>b.n_db-a.n_db).slice(0,12);
     const {cv,c,w}=pdCanvas(440);c.clearRect(0,0,w,440);
-    pdText(c,16,18,'逐诊断 AUC 衰减（玫瑰=账面 / 薄荷=真金标准）',PD_TXT,13);
+    pdText(c,16,18,z("逐诊断 AUC 衰减（玫瑰=账面 / 薄荷=真金标准）","Per-diagnosis AUC decay (rose=apparent / mint=true-gold)"),PD_TXT,13);
     const n=top.length,padL=110,padR=20,gw=(w-padL-padR)/n,barW=gw*0.32;
     top.forEach((d,i)=>{const x=padL+i*gw+ (gw-barW*2-6)/2;
       const hA=d.auc_app*320,hT=d.auc_true*320;
       c.fillStyle=PD_COL.acc;c.fillRect(x,360-hA,barW,hA);
       c.fillStyle=PD_COL.good;c.fillRect(x+barW+6,360-hT,barW,hT);
-      pdText(c,padL+i*gw+gw/2,376,d.code||d.name,PD_DIM,9,'center');
+      pdText(c,padL+i*gw+gw/2,376,d.code||DX_LBL(d.name),PD_DIM,9,'center');
       pdText(c,x+barW/2,360-hA-8,(d.auc_app).toFixed(2),PD_COL.acc,9,'center');
       pdText(c,x+barW+6+barW/2,360-hT-8,(d.auc_true).toFixed(2),PD_COL.good,9,'center');});
-    pdLegend(c,[{t:'账面',col:PD_COL.acc},{t:'真金标准',col:PD_COL.good}],padL,398);
+    pdLegend(c,[{t:z("账面","apparent"),col:PD_COL.acc},{t:z("真金标准","true-gold"),col:PD_COL.good}],padL,398);
     note.innerHTML='<b>临床解读：</b>对多数诊断，账面 AUC 与真金标准 AUC 的落差，正是被标签噪声「掺掉」的判别力。'+
       '差值越大，说明该诊断的公开指标越不可信。';
   }else if(v==='hotspot'){
     const {cv,c,w}=pdCanvas(440);c.clearRect(0,0,w,440);
-    pdText(c,16,18,'标签混淆热点：横轴=漏标率 qfn，纵轴=误标率 fdr',PD_TXT,13);
+    pdText(c,16,18,z("标签混淆热点：横轴=漏标率 qfn，纵轴=误标率 fdr","Label confusion hotspots: x=miss rate qfn, y=over-call rate fdr"),PD_TXT,13);
     const padL=54,padB=40,padT=34,plotW=w-padL-20,plotH=440-padT-padB;
     /* 四象限底色 */
     c.fillStyle='rgba(95,227,161,0.07)';c.fillRect(padL,padT,plotW/2,plotH/2); /* 左下干净 */
@@ -3572,11 +3623,11 @@ function pdRender(){
     c.fillStyle='rgba(255,122,182,0.07)';c.fillRect(padL,padT+plotH/2,plotW/2,plotH/2); /* 右下漏标 */
     c.fillStyle='rgba(255,209,102,0.07)';c.fillRect(padL+plotW/2,padT+plotH/2,plotW/2,plotH/2); /* 左上误标 */
     pdGridBox(c,padL,padT,plotW,plotH);
-    pdText(c,padL+6,padT+10,'误标型(over-call)',PD_DIM,10,'left');
-    pdText(c,padL+plotW-6,padT+10,'双高(最糟)',PD_DIM,10,'right');
-    pdText(c,padL+6,padT+plotH-6,'干净',PD_DIM,10,'left');
-    pdText(c,padL+plotW-6,padT+plotH-6,'漏标型(under-call)',PD_DIM,10,'right');
-    pdText(c,padL-8,padT+plotH/2,'误标率 fdr →',PD_DIM,11,'right');
+    pdText(c,padL+6,padT+10,z("误标型(over-call)","over-call type"),PD_DIM,10,'left');
+    pdText(c,padL+plotW-6,padT+10,z("双高(最糟)","both-high (worst)"),PD_DIM,10,'right');
+    pdText(c,padL+6,padT+plotH-6,z("干净","clean"),PD_DIM,10,'left');
+    pdText(c,padL+plotW-6,padT+plotH-6,z("漏标型(under-call)","under-call type"),PD_DIM,10,'right');
+    pdText(c,padL-8,padT+plotH/2,z("误标率 fdr →","over-call rate fdr to the top"),PD_DIM,11,'right');
     PD_DER.forEach(d=>{const x=padL+d.qfn*plotW,y=padT+(1-d.fdr)*plotH;
       c.fillStyle=(d.urg||0)>=4?PD_COL.bad:PD_COL.sky;
       c.beginPath();c.arc(x,y,(d.urg||0)>=4?6:4,0,7);c.fill();});
@@ -3587,17 +3638,17 @@ function pdRender(){
     const top=PD_DER.slice().sort((a,b)=>a.n_db-b.n_db).slice(0,14);
     pdBarsH(top.map(d=>({label:d.name+' (n='+d.n_db+')',val:1/Math.sqrt(d.n_db),
       col:PD_COL.grape,sub:'±'+(1/Math.sqrt(d.n_db)*100).toFixed(0)+'pp*'})),460,{maxV:1/Math.sqrt(2)});
-    sub.innerHTML='误差条宽度 ∝ 1/√n（小样本 → 噪声率估计不可靠）';
+    sub.innerHTML=z("误差条宽度 ∝ 1/√n（小样本 → 噪声率估计不可靠）","Error-bar width proportional to 1/sqrt(n) (small n means unreliable noise estimates)");
     note.innerHTML='<b>临床解读：</b>很多罕见诊断的样本量极小（n<10），其 qfn/fdr 估计的置信区间极宽，'+
       '点估计本身不可信。对这些诊断，<b>不宜直接引用数值</b>，应先积累病例或依赖专家共识。';
   }else if(v==='prio'){
     const {cv,c,w}=pdCanvas(460);c.clearRect(0,0,w,460);
-    pdText(c,16,18,'临床优先级 × 标签噪声严重度矩阵（红=需重点核查）',PD_TXT,13);
+    pdText(c,16,18,z("临床优先级 × 标签噪声严重度矩阵（红=需重点核查）","Clinical priority x label-noise severity matrix (red = needs review)"),PD_TXT,13);
     const urgLab=['','低危','中低','中','中高','高危'];const cols=['低噪声','中噪声','高噪声'];
     const padL=70,padT=44,cellW=(w-padL-20)/3,cellH=(460-padT-30)/5;
-    cols.forEach((cl,j)=>pdText(c,padL+j*cellW+cellW/2,32,cl,PD_DIM,11,'center'));
+    cols.forEach((cl,j)=>pdText(c,padL+j*cellW+cellW/2,32, z(cl, cl==='低噪声'?'low noise':cl==='中噪声'?'med noise':'high noise'), PD_DIM,11,'center'));
     for(let u=5;u>=1;u--){const y=padT+(5-u)*cellH;
-      pdText(c,padL-8,y+cellH/2,'紧急度'+urgLab[u],PD_DIM,10,'right');
+      pdText(c,padL-8,y+cellH/2, z('紧急度'+urgLab[u], 'urgency '+URG_EN[urgLab[u]]), PD_DIM,10,'right');
       for(let j=0;j<3;j++){const cell=PD_DER.filter(d=>(d.urg||0)===u&&
         (j===0?d.noise<0.33:j===1?d.noise<0.66:d.noise>=0.66));
         const names=cell.map(d=>d.name).slice(0,3).join('、');
@@ -3610,6 +3661,7 @@ function pdRender(){
   }
 }
 
+regRedraw('box-pd', l=>pdRender(l));
 /* ====== 模块6 数据 ====== */
 const SUB = {"main":{"n":613,"tot":623,"acc":274,"inacc":339,"und":10},"subset":{"n_t1":125,"n_pure":37,"abcd":{"A":39,"B":69,"C":8,"D":9},"abcd_pure":{"A":3,"B":29,"C":2,"D":3},"miss":{"p":0.376,"lo":0.295977,"hi":0.463417},"false":{"p":0.624,"lo":0.536583,"hi":0.704023},"miss_pure":{"p":0.135135,"lo":0.059133,"hi":0.279774},"false_pure":{"p":0.864865,"lo":0.720226,"hi":0.940867}},"baseline":{"n":364,"miss":{"p":0.214286,"lo":0.175231,"hi":0.259308},"false":{"p":0.56044,"lo":0.509083,"hi":0.610534}},"fisher":{"or":2.441082,"lo":1.388555,"hi":4.339473,"p":0.001227},"disease":{"labels":["心房颤动/扑动","室上性心动过速","室性心动过速","心室颤动","高度/III度房室阻滞","病态窦房结综合征"],"n":[105,3,0,0,1,1],"highrisk_other":2},"severity":{"labels":["高危","中危","低危"],"n":[2,107,16]},"swap":{"n":95,"pct":0.76},"cooc":{"labels":["其他未分类偏差","类型1：核心心律失常诊断错误或缺失","类型1：核心心律失常诊断错误或缺失差","类型10：原多诊断冗余错误","类型2：传导阻滞细化补充","类型3：新增ST-T相关改变","类型4：新增心电轴异常","类型5：新增或细化QRS低电压","类型6：新增异常Q波/R波递增不良","类型8：新增起搏器/起搏心律诊断","类型9：新增P波异常/U波等其他次要异常"],"J":[[1,0,0,0,0,0,0,0,0,0,0],[0,1,0,0.036765,0.175676,0.184834,0.095541,0.015625,0.111842,0.111111,0.127778],[0,0,1,0,0,0,0,0,0,0,0],[0,0.036765,0,1,0.080645,0.014184,0.031746,0,0.087719,0,0.103448],[0,0.175676,0,0.080645,1,0.106918,0.209877,0.018182,0.079545,0,0.131579],[0,0.184834,0,0.014184,0.106918,1,0.10828,0.03125,0.062112,0.007092,0.120219],[0,0.095541,0,0.031746,0.209877,0.10828,1,0.018868,0.094118,0,0.076271],[0,0.015625,0,0,0.018182,0.03125,0.018868,1,0.0625,0,0],[0,0.111842,0,0.087719,0.079545,0.062112,0.094118,0.0625,1,0,0.050847],[0,0.111111,0,0,0,0.007092,0,0,0,1,0.010638],[0,0.127778,0,0.103448,0.131579,0.120219,0.076271,0,0.050847,0.010638,1]]},"ptbxl":{"np":101,"scp_same_n":101,"scp_match_rate":1,"core_n":8,"core_disagree":0,"core_disagree_rate":0,"np_cc":100,"n_cc_diff":54,"cc_disagree_rate":0.54,"n_cc_na":1,"n_core_cc":8,"cc_disagree_core_rate":0.875},"cases":{"A":{"orig":"心律不明确；按需心室起搏；起搏器心律，不另行分析；异常心电图。","corr":"心脏起搏器 / 心房扑动 / 心室起搏心电图 / 室性期前收缩"},"B":{"orig":"AF(心房扑动) + AVB(房室传导阻滞) + TWC(T波改变)","corr":"心房扑动 / T波改变"},"D":{"orig":"IDC(室内差异传导) + SB(窦性心动过缓)","corr":"不确定是否室内差异传导？"}}};
 
@@ -3647,13 +3699,13 @@ function subData(){
 function renderSubKPI(){
   const d=subData(), m=d.miss, f=d.false;
   const tiles=[
-    ['pri',SUB.main.n,'主分析集 (例)'],
-    ['good',SUB.main.acc,'准确 (例)'],
-    ['bad',SUB.main.inacc,'不准确 (例)'],
-    ['acc',d.n,'类型01 子集 (例)'],
-    ['warn',fmtP(m.p),'漏标率 (子集内)'],
-    ['sky',fmtP(f.p),'误标率 (子集内)'],
-    ['grape',SUB.fisher.or.toFixed(2),'误标 vs 基线 OR']
+    ['pri',SUB.main.n,bi("主分析集 (例)","Main analysis set (cases)")],
+    ['good',SUB.main.acc,bi("准确 (例)","Accurate (cases)")],
+    ['bad',SUB.main.inacc,bi("不准确 (例)","Inaccurate (cases)")],
+    ['acc',d.n,bi("类型01 子集 (例)","Type-01 subset (cases)")],
+    ['warn',fmtP(m.p),bi("漏标率 (子集内)","Miss rate (in subset)")],
+    ['sky',fmtP(f.p),bi("误标率 (子集内)","False-call rate (in subset)")],
+    ['grape',SUB.fisher.or.toFixed(2),bi("误标 vs 基线 OR","Over-call vs baseline OR")]
   ];
   document.getElementById('sub-kpi').innerHTML=tiles.map(t=>
     `<div class="tile ${t[0]}"><div class="v">${t[1]}</div><div class="l">${t[2]}</div></div>`).join('');
@@ -3683,7 +3735,7 @@ function renderSubABCD(){
   const bh=H-padT-padB, rowH=bh/items.length; let s='';
   items.forEach((it,i)=>{const y=padT+i*rowH;const w=(it.val/mx)*(W-padL-padR);
     const pct=(it.val/n*100).toFixed(1)+'%';
-    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12.5" fill="var(--ink)">${it.label}</text>`+
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12.5" fill="var(--ink)">${biT(it.label,({'A 完全缺失':'A fully missing','B 类型混淆':'B type confusion','C 缺失+误标混合':'C missing + false label','D 误标/表述':'D mislabel / wording'}[it.label]||it.label))}</text>`+
     `<rect x="${padL}" y="${y+rowH*0.16}" width="${Math.max(w,1)}" height="${rowH*0.68}" rx="5" fill="${it.col}" opacity="0.9"/>`+
     `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12" fill="var(--dim)" font-family="monospace">${it.val} (${pct})</text></g>`;});
   svg.innerHTML=s;
@@ -3704,7 +3756,7 @@ function renderSubDisease(){
   const mx=Math.max.apply(null,ds.n.concat([1])), padL=170,padR=60,padT=14,padB=14;
   const bh=H-padT-padB, rowH=bh/items.length; let s='';
   items.forEach((it,i)=>{const y=padT+i*rowH;const w=(it.val/mx)*(W-padL-padR);
-    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12" fill="var(--ink)">${it.label}</text>`+
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12" fill="var(--ink)">${biT(it.label, DX_LBL(it.label))}</text>`+
     `<rect x="${padL}" y="${y+rowH*0.18}" width="${Math.max(w,1)}" height="${rowH*0.64}" rx="5" fill="${it.col}" opacity="0.85"/>`+
     `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12" fill="var(--dim)" font-family="monospace">${it.val}</text></g>`;});
   svg.innerHTML=s;
@@ -3722,7 +3774,7 @@ function renderSubSeverity(){
   const mx=Math.max.apply(null,sv.n.concat([1])), padL=70,padR=40,padT=20,padB=30;
   const bh=H-padT-padB, rowH=bh/items.length; let s='';
   items.forEach((it,i)=>{const y=padT+i*rowH;const w=(it.val/mx)*(W-padL-padR);const pct=(it.val/tot*100).toFixed(1)+'%';
-    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="13" fill="${it.col}">${it.label}</text>`+
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="13" fill="${it.col}">${biT(it.label, SEV_EN[it.label]||it.label)}</text>`+
     `<rect x="${padL}" y="${y+rowH*0.15}" width="${Math.max(w,1)}" height="${rowH*0.7}" rx="6" fill="${it.col}" opacity="0.85"/>`+
     `<text x="${padL+Math.max(w,1)+8}" y="${y+rowH/2}" font-size="12.5" fill="var(--ink)" font-family="monospace">${it.val} (${pct})</text></g>`;});
   svg.innerHTML=s;
@@ -3745,7 +3797,7 @@ function renderSubPareto(){
     if(i>0) s+=`<line x1="${padL+(i-1)*step+step/2}" y1="${padT+bh-(cumAt(order,i-1)/n)*bh}" x2="${x+w/2}" y2="${padT+bh-cp*bh}" stroke="#ff7ab6" stroke-width="1.5"/>`;
     s+=`<circle cx="${x+w/2}" cy="${padT+bh-cp*bh}" r="3.5" fill="#ff7ab6"/></g>`;});
   svg.innerHTML=s;
-  svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{g.onmousemove=e=>{const o=order[idx];showTip(`<b>${o[0]} 类</b><br>病例数 ${o[1]}<br>累计占比 ${(cumAt(order,idx)/n*100).toFixed(1)}%`,e);};g.onmouseleave=hideTip;});
+  svg.querySelectorAll('g[data-i]').forEach((g,idx)=>{g.onmousemove=e=>{const o=order[idx];showTip(`<b>${bi(o[0]+' 类', o[0]+' type')}</b><br>病例数 ${o[1]}<br>累计占比 ${(cumAt(order,idx)/n*100).toFixed(1)}%`,e);};g.onmouseleave=hideTip;});
 }
 
 function renderSubCooc(){
@@ -3777,24 +3829,24 @@ function renderSubCooc(){
 function renderSubPTBXL(){
   const p=SUB.ptbxl, d=subData();
   const tiles=[
-    ['pri',p.np,'双阅 ECG 对'],
-    ['good','100%','结构码一致率'],
-    ['acc','0%','核心 SCP 分歧率'],
-    ['bad',fmtP(p.cc_disagree_rate),'判定(准/不准)分歧率'],
-    ['warn',fmtP(p.cc_disagree_core_rate),'核心对判定分歧率']
+    ['pri',p.np,bi("双阅 ECG 对","Double-read ECG pairs")],
+    ['good','100%',bi("结构码一致率","Structure-code agreement")],
+    ['acc','0%',bi("核心 SCP 分歧率","Core SCP disagreement")],
+    ['bad',fmtP(p.cc_disagree_rate),bi("判定(准/不准)分歧率","Call (correct/incorrect) disagreement")],
+    ['warn',fmtP(p.cc_disagree_core_rate),bi("核心对判定分歧率","Core-pair call disagreement")]
   ];
   document.getElementById('sub-ptbxl').innerHTML=tiles.map(t=>
     `<div class="tile ${t[0]}"><div class="v">${t[1]}</div><div class="l">${t[2]}</div></div>`).join('');
   const items=[
-    {label:'宁波 类型01 误标率',val:d.false.p,col:'#ff5757'},
-    {label:'PTB-XL 结构码一致率',val:1,col:'#5fe3a1'},
-    {label:'PTB-XL 判定分歧率',val:p.cc_disagree_rate,col:'#ffd166'},
-    {label:'PTB-XL 核心对判定分歧率',val:p.cc_disagree_core_rate,col:'#ff7ab6'}
+    {label:'宁波 类型01 误标率',en:'Ningbo type-01 over-call rate',val:d.false.p,col:'#ff5757'},
+    {label:'PTB-XL 结构码一致率',en:'PTB-XL structure-code agreement',val:1,col:'#5fe3a1'},
+    {label:'PTB-XL 判定分歧率',en:'PTB-XL call disagreement',val:p.cc_disagree_rate,col:'#ffd166'},
+    {label:'PTB-XL 核心对判定分歧率',en:'PTB-XL core-pair call disagreement',val:p.cc_disagree_core_rate,col:'#ff7ab6'}
   ];
   const svg=document.getElementById('sub-ptbxl-bar'), W=1100,H=240;
   const padL=240,padR=80,padT=14,padB=14, bh=H-padT-padB, rowH=bh/items.length; let s='';
   items.forEach((it,i)=>{const y=padT+i*rowH;const w=it.val*(W-padL-padR);
-    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12.5" fill="var(--ink)">${it.label}</text>`+
+    s+=`<g data-i="${i}"><text x="0" y="${y+rowH/2}" font-size="12.5" fill="var(--ink)">${biT(it.label, it.en||it.label)}</text>`+
     `<rect x="${padL}" y="${y+rowH*0.16}" width="${Math.max(w,2)}" height="${rowH*0.68}" rx="5" fill="${it.col}" opacity="0.88"/>`+
     `<text x="${padL+Math.max(w,2)+8}" y="${y+rowH/2}" font-size="12" fill="var(--dim)" font-family="monospace">${(it.val*100).toFixed(1)}%</text></g>`;});
   svg.innerHTML=s;
@@ -3815,7 +3867,7 @@ function renderSubAttr(){
     ['人为审核因素',A+' 例完全缺失(A类) + '+D+' 例多余核心(D类) 反映医师审核遗漏/术语习惯',humanPct,'中等证据']
   ];
   let h='<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
-  h+='<tr style="color:#c2b89c;text-align:left;"><th style="padding:6px 8px;border-bottom:1px solid var(--line)">归因层</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">可推断证据</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">估计占比</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">证据强度</th></tr>';
+  h+='<tr style="color:#c2b89c;text-align:left;"><th style="padding:6px 8px;border-bottom:1px solid var(--line)">bi("归因层","Attribution layer")</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">bi("可推断证据","Inferable evidence")</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">bi("估计占比","Est. share")</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">bi("证据强度","Evidence strength")</th></tr>';
   rows.forEach(r=>{h+=`<tr><td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:var(--pri);font-weight:600;vertical-align:top">${r[0]}</td>`+
     `<td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:#f5efdc;line-height:1.5;vertical-align:top">${r[1]}</td>`+
     `<td style="padding:6px 8px;border-bottom:1px dashed var(--line);font-family:monospace;color:var(--warn);vertical-align:top">${r[2]}</td>`+
@@ -3826,9 +3878,9 @@ function renderSubAttr(){
 
 function renderSubCases(){
   const c=SUB.cases;
-  const rows=[['A 完全缺失',c.A],['B 类型混淆',c.B],['D 误标/表述',c.D]];
+  const rows=[[bi("A 完全缺失","A fully missing"),c.A],[bi("B 类型混淆","B type confusion"),c.B],[bi("D 误标/表述","D mislabel / wording"),c.D]];
   let h='<table style="width:100%;border-collapse:collapse;font-size:12.5px;">';
-  h+='<tr style="color:#c2b89c;text-align:left;"><th style="padding:6px 8px;border-bottom:1px solid var(--line)">子型</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">原始标注</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">专家回看</th></tr>';
+  h+='<tr style="color:#c2b89c;text-align:left;"><th style="padding:6px 8px;border-bottom:1px solid var(--line)">bi("子型","Subtype")</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">bi("原始标注","Original label")</th><th style="padding:6px 8px;border-bottom:1px solid var(--line)">bi("专家回看","Expert review")</th></tr>';
   rows.forEach(r=>{h+=`<tr><td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:var(--pri);font-weight:600;white-space:nowrap;vertical-align:top">${r[0]}</td>`+
     `<td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:#ffb0b0;font-family:monospace;font-size:12px;vertical-align:top">${r[1].orig}</td>`+
     `<td style="padding:6px 8px;border-bottom:1px dashed var(--line);color:#a8f0c8;font-family:monospace;font-size:12px;vertical-align:top">${r[1].corr}</td></tr>`;});
