@@ -6,49 +6,49 @@
 <title>MIMIC 标签噪声分析 · 模拟器</title>
 <style>
 :root{
-  --bg:#1c1f2a; --bg2:#252836;
-  --panel:rgba(40,46,62,0.72); --panel2:rgba(56,62,80,0.78);
-  --ink:#f5efdc; --dim:#c2b89c; --dim2:#9c9580;
-  --line:rgba(255,180,84,0.22);
-  --pri:#ffb454; --pri2:#ffd09a;
-  --acc:#ff7ab6; --acc2:#ffb3d6;
-  --good:#5fe3a1; --good2:#a8f0c8;
-  --warn:#ffd166;
-  --bad:#ff5757;  --bad2:#ffb0b0;
-  --sky:#4cc7ff; --sky2:#a0e1ff;
-  --grape:#c8a8ff;
-  --gold:#f5b942;
+  --bg:#f4f6fa; --bg2:#ffffff;
+  --panel:#ffffff; --panel2:#eef2f7;
+  --ink:#1f2a3a; --dim:#5b6675; --dim2:#8a93a3;
+  --line:#dbe2ec;
+  --pri:#2563eb; --pri2:#60a5fa;
+  --acc:#db2777; --acc2:#f472b6;
+  --good:#16a34a; --good2:#86efac;
+  --warn:#d97706;
+  --bad:#dc2626; --bad2:#fca5a5;
+  --sky:#0ea5e9; --sky2:#7dd3fc;
+  --grape:#7c3aed; --grape2:#c4b5fd;
+  --gold:#ca8a04;
   --font:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font);}
-body{overflow-x:hidden;background:radial-gradient(ellipse at 20% 0%,#2b2438 0%,var(--bg) 55%),radial-gradient(ellipse at 100% 100%,#2a2f3d 0%,var(--bg) 60%);}
+body{overflow-x:hidden;background:var(--bg);}
 #bg{position:fixed;inset:0;z-index:0;opacity:0.4;}
 .wrap{position:relative;z-index:1;max-width:1220px;margin:0 auto;padding:0 18px 80px;}
 header.top{position:relative;z-index:1;padding:32px 18px 6px;max-width:1220px;margin:0 auto;}
 header.top h1{font-size:29px;margin:0;letter-spacing:1px;
   background:linear-gradient(90deg,var(--pri),var(--sky),var(--good));
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  text-shadow:0 0 22px rgba(255,180,84,0.18);}
+  text-shadow:0 0 22px rgba(37,99,235),0.18);}
 header.top p.sub{color:var(--dim);margin:8px 0 0;font-size:13.5px;line-height:1.7;}
 header.top .badge{display:inline-block;margin-top:10px;padding:4px 12px;border:1px solid var(--line);
-  border-radius:20px;font-size:12px;color:var(--pri);background:rgba(255,180,84,0.07);}
+  border-radius:20px;font-size:12px;color:var(--pri);background:rgba(37,99,235,0.08);
 nav.tabs{position:sticky;top:0;z-index:5;display:flex;gap:8px;flex-wrap:wrap;
   padding:12px 18px;margin:14px auto 0;max-width:1220px;
-  background:rgba(28,31,42,0.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+  background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
 nav.tabs button{flex:1;min-width:150px;cursor:pointer;border:1px solid var(--line);
   background:var(--panel);color:var(--dim);padding:11px 10px;border-radius:12px;
   font-size:13.5px;font-family:var(--font);transition:.18s;letter-spacing:.5px;}
 nav.tabs button .n{font-family:var(--mono);color:var(--pri);margin-right:6px;font-size:12px;}
-nav.tabs button:hover{color:var(--ink);border-color:rgba(255,180,84,0.45);}
+nav.tabs button:hover{color:var(--ink);border-color:rgba(37,99,235),0.45);}
 nav.tabs button.active{color:#2a1a05;background:linear-gradient(120deg,var(--pri),var(--pri2));
-  border-color:transparent;box-shadow:0 0 22px rgba(255,180,84,0.35);font-weight:700;}
+  border-color:transparent;box-shadow:0 0 22px rgba(37,99,235),0.35);font-weight:700;}
 section.mod{display:none;margin-top:22px;animation:fade .4s ease;}
 section.mod.active{display:block;}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .lead{color:var(--dim);font-size:13.5px;line-height:1.75;margin:0 0 16px;
-  border-left:3px solid var(--sky);padding:6px 0 6px 14px;background:rgba(76,199,255,0.05);border-radius:0 8px 8px 0;}
+  border-left:3px solid var(--sky);padding:6px 0 6px 14px;background:rgba(14,165,233,0.07);border-radius:0 8px 8px 0;}
 .lead b{color:var(--pri2)}
 .grid{display:grid;gap:16px;}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;
@@ -65,16 +65,16 @@ section.mod.active{display:block;}
 .tile.warn .v{color:var(--warn)} .tile.bad .v{color:var(--bad)} .tile.sky .v{color:var(--sky)} .tile.grape .v{color:var(--grape)}
 svg{display:block;width:100%;height:auto;}
 #tooltip{position:fixed;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s;
-  background:rgba(20,18,12,0.96);border:1px solid var(--pri);border-radius:9px;
+  background:rgba(31,41,55,0.97);border:1px solid var(--pri);border-radius:9px;
   padding:9px 12px;font-size:12.5px;line-height:1.55;max-width:320px;
-  box-shadow:0 0 22px rgba(255,180,84,0.28);color:var(--ink);}
+  box-shadow:0 6px 22px rgba(0,0,0,0.18);color:#fff;}
 #tooltip b{color:var(--pri)}
 .ctl{margin:10px 0;}
 .ctl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:5px;}
 .ctl label .val{font-family:var(--mono);color:var(--pri);font-weight:700;}
 .btn{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);
   padding:9px 15px;border-radius:11px;font-size:13px;font-family:var(--font);transition:.15s;}
-.btn:hover{border-color:var(--pri);box-shadow:0 0 14px rgba(255,180,84,0.3);}
+.btn:hover{border-color:var(--pri);box-shadow:0 0 14px rgba(37,99,235),0.3);}
 .btn.amber{background:linear-gradient(120deg,var(--pri),var(--pri2));color:#2a1a05;border:none;font-weight:700;}
 .btn.toggle.on{background:linear-gradient(120deg,var(--good),var(--good2));color:#04210f;border:none;font-weight:700;}
 select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;
@@ -88,8 +88,8 @@ select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);bo
 .kpi.big{font-size:21px;font-weight:700;}
 table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
 table.tbl th,table.tbl td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;}
-table.tbl th{background:rgba(255,180,84,0.10);color:var(--pri2);font-weight:600;position:sticky;top:0;}
-table.tbl tr:nth-child(even){background:rgba(255,255,255,0.025);}
+table.tbl th{background:rgba(37,99,235,0.08);color:var(--pri);font-weight:600;position:sticky;top:0;}
+table.tbl tr:nth-child(even){background:#f4f6fa;}
 table.tbl td.num{font-family:var(--mono);text-align:right;}
 .tag-exp{display:inline-block;padding:1px 7px;border-radius:7px;font-size:11px;
   background:rgba(200,168,255,0.18);color:var(--grape);border:1px solid rgba(200,168,255,0.4);}
@@ -104,7 +104,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font-size:
 <canvas id="bg"></canvas>
 <header class="top">
   <h1>MIMIC 心电图标签噪声分析 · 交互模拟器</h1>
-  <p class="sub">基于 <b style="color:var(--pri)">MIMIC 合并-7.17（专家审阅版）</b> 的标签质量分析，并与 <b style="color:var(--sky)">宁波</b>、<b style="color:var(--acc)">PTB-XL</b> 两库做同等维度对照。
+  <p class="sub">基于 <b style="color:var(--pri)">MIMIC 合并-8.11（专家审阅版）</b> 的标签质量分析，并与 <b style="color:var(--sky)">宁波</b>、<b style="color:var(--acc)">PTB-XL</b> 两库做同等维度对照。
   本模拟器聚焦：数据重复性、标签准确性、诊断分布、三库差异，以及跨库诊断词汇对照（含专家补充词汇）。
   <br/><span style="color:var(--dim2);font-size:12px;">命名约定：<b>准确</b>=原始标签与专家判定一致；<b>不准确</b>=不一致（correctLabel 给出纠正）；<b>未判定</b>=专家未给出最终判定。</span></p>
   <span class="badge" id="hdr-badge">数据底座加载中…</span>
@@ -203,7 +203,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font-size:
 </div>
 
 <footer>
-  MIMIC 标签噪声分析 · 交互模拟器 &nbsp;|&nbsp; 数据：MIMIC 合并-7.17（专家审阅版，1000 例） &nbsp;|&nbsp; 对照：宁波去重 613 主集 / PTB-XL 674 例<br/>
+  MIMIC 标签噪声分析 · 交互模拟器 &nbsp;|&nbsp; 数据：MIMIC 合并-8.11（专家审阅版，1000 例） &nbsp;|&nbsp; 对照：宁波去重 613 主集 / PTB-XL 674 例<br/>
   所有统计由 <code>analyze_mimic.py</code> 从原始 Excel 复算并内联；本页为离线单文件，无外部依赖。
 </footer>
 
@@ -306,11 +306,11 @@ const M = {
      "n": 7
     },
     {
-     "report": "Sinus rhythm,Poor R wave progression - probable normal variant,Borderline ECG",
+     "report": "Sinus rhythm,ST junctional depression is nonspecific,Borderline ECG",
      "n": 7
     },
     {
-     "report": "Sinus rhythm,ST junctional depression is nonspecific,Borderline ECG",
+     "report": "Sinus rhythm,Poor R wave progression - probable normal variant,Borderline ECG",
      "n": 7
     },
     {
@@ -323,34 +323,34 @@ const M = {
     }
    ]
   },
-  "conclusion": "经全字段、annotation_id、id、subject_id、study_id 五类关键字段核查，MIMIC 合并-7.17 的 1000 行记录【不存在真实的重复记录】（所有强重复信号字段均唯一）。report/report_cn 的「文本重复」源于自由文本 ECG 标签的天然集中度（常见结论如窦性心律/正常心电图跨患者大量重复），属抽样样本的真实诊断分布特征，而非导出缺陷，【不应作为重复剔除】。因此本分析直接以全量 1000 例作为 MIMIC 主分析集，主键采用 annotation_id。",
+  "conclusion": "经全字段、annotation_id、id、subject_id、study_id 五类关键字段核查，MIMIC 合并-8.11 的 1000 行记录【不存在真实的重复记录】（所有强重复信号字段均唯一）。report/report_cn 的「文本重复」源于自由文本 ECG 标签的天然集中度（常见结论如窦性心律/正常心电图跨患者大量重复），属抽样样本的真实诊断分布特征，而非导出缺陷，【不应作为重复剔除】。因此本分析直接以全量 1000 例作为 MIMIC 主分析集，主键采用 annotation_id。",
   "recommendation": "① 无需对 MIMIC 做记录级去重（关键ID全唯一）；② 若后续与其他库合并做患者级分析，应以 subject_id 聚类并报告跨患者稳健性；③ report 文本高重复度提示：简单随机抽样下，少数高频诊断主导了标签空间，稀有诊断(如 Brugada/预激/尖端扭转)在 1000 例中被严重低估，建议补充按诊断分层抽样以校准罕见诊断的错误率估计。"
  },
  "stats": {
   "n": 1000,
   "label": {
-   "acc": 230,
-   "ina": 760,
-   "und": 10,
-   "acc_p": 23.0,
-   "ina_p": 76.0,
-   "und_p": 1.0,
+   "acc": 226,
+   "ina": 774,
+   "und": 0,
+   "acc_p": 22.6,
+   "ina_p": 77.4,
+   "und_p": 0.0,
    "acc_ci": [
-    20.5,
-    25.7
+    20.1,
+    25.3
    ],
    "ina_ci": [
-    73.3,
-    78.5
+    74.7,
+    79.9
    ],
    "und_ci": [
-    0.5,
-    1.8
+    0,
+    0.4
    ]
   },
   "correctlabel_fill": {
-   "ina_n": 760,
-   "filled": 760,
+   "ina_n": 774,
+   "filled": 774,
    "fill_p": 100.0
   },
   "demo": {
@@ -464,12 +464,12 @@ const M = {
     "p": 8.4
    },
    {
-    "term": "为正常变异",
+    "term": "电轴左偏",
     "n": 61,
     "p": 6.1
    },
    {
-    "term": "电轴左偏",
+    "term": "为正常变异",
     "n": 61,
     "p": 6.1
    },
@@ -479,12 +479,12 @@ const M = {
     "p": 5.0
    },
    {
-    "term": "下壁心肌梗死",
+    "term": "QT间期延长",
     "n": 40,
     "p": 4.0
    },
    {
-    "term": "QT间期延长",
+    "term": "下壁心肌梗死",
     "n": 40,
     "p": 4.0
    },
@@ -499,11 +499,6 @@ const M = {
     "p": 3.5
    },
    {
-    "term": "心电轴左偏",
-    "n": 32,
-    "p": 3.2
-   },
-   {
     "term": "左束支传导阻滞",
     "n": 32,
     "p": 3.2
@@ -514,17 +509,22 @@ const M = {
     "p": 3.2
    },
    {
+    "term": "心电轴左偏",
+    "n": 32,
+    "p": 3.2
+   },
+   {
     "term": "下壁",
     "n": 30,
     "p": 3.0
    },
    {
-    "term": "右束支传导阻滞",
+    "term": "R波递增不良",
     "n": 29,
     "p": 2.9
    },
    {
-    "term": "R波递增不良",
+    "term": "右束支传导阻滞",
     "n": 29,
     "p": 2.9
    },
@@ -534,12 +534,12 @@ const M = {
     "p": 2.7
    },
    {
-    "term": "心电图异常",
+    "term": "胸导联低电压",
     "n": 25,
     "p": 2.5
    },
    {
-    "term": "胸导联低电压",
+    "term": "心电图异常",
     "n": 25,
     "p": 2.5
    },
@@ -574,12 +574,7 @@ const M = {
     "p": 1.6
    },
    {
-    "term": "一度房室传导阻滞",
-    "n": 15,
-    "p": 1.5
-   },
-   {
-    "term": "前壁T波非特异性改变",
+    "term": "侧壁T波改变",
     "n": 15,
     "p": 1.5
    },
@@ -589,7 +584,12 @@ const M = {
     "p": 1.5
    },
    {
-    "term": "侧壁T波改变",
+    "term": "一度房室传导阻滞",
+    "n": 15,
+    "p": 1.5
+   },
+   {
+    "term": "前壁T波非特异性改变",
     "n": 15,
     "p": 1.5
    },
@@ -604,11 +604,6 @@ const M = {
     "p": 1.3
    },
    {
-    "term": "左心室肥厚伴继发性复极异常",
-    "n": 12,
-    "p": 1.2
-   },
-   {
     "term": "V1导联rSr'型",
     "n": 12,
     "p": 1.2
@@ -619,9 +614,9 @@ const M = {
     "p": 1.2
    },
    {
-    "term": "V1导联呈rSr'型",
-    "n": 11,
-    "p": 1.1
+    "term": "左心室肥厚伴继发性复极异常",
+    "n": 12,
+    "p": 1.2
    },
    {
     "term": "左心房肥大",
@@ -634,12 +629,17 @@ const M = {
     "p": 1.1
    },
    {
+    "term": "房性早搏",
+    "n": 11,
+    "p": 1.1
+   },
+   {
     "term": "左心房异常",
     "n": 11,
     "p": 1.1
    },
    {
-    "term": "室性早搏",
+    "term": "V1导联呈rSr'型",
     "n": 11,
     "p": 1.1
    }
@@ -741,12 +741,12 @@ const M = {
     "p": 2.7
    },
    {
-    "term": "Right bundle branch block",
+    "term": "Left ventricular hypertrophy",
     "n": 26,
     "p": 2.6
    },
    {
-    "term": "Left ventricular hypertrophy",
+    "term": "Right bundle branch block",
     "n": 26,
     "p": 2.6
    },
@@ -776,12 +776,12 @@ const M = {
     "p": 1.7
    },
    {
-    "term": "Short PR interval",
+    "term": "RBBB with left anterior fascicular block",
     "n": 17,
     "p": 1.7
    },
    {
-    "term": "RBBB with left anterior fascicular block",
+    "term": "Short PR interval",
     "n": 17,
     "p": 1.7
    },
@@ -796,12 +796,12 @@ const M = {
     "p": 1.6
    },
    {
-    "term": "Sinus rhythm with borderline 1st degree A-V block",
+    "term": "Low QRS voltages in limb leads",
     "n": 15,
     "p": 1.5
    },
    {
-    "term": "Low QRS voltages in limb leads",
+    "term": "Sinus rhythm with borderline 1st degree A-V block",
     "n": 15,
     "p": 1.5
    },
@@ -811,19 +811,14 @@ const M = {
     "p": 1.4
    },
    {
-    "term": "Possible left atrial abnormality",
-    "n": 14,
-    "p": 1.4
-   },
-   {
     "term": "ST junctional depression is nonspecific",
     "n": 14,
     "p": 1.4
    },
    {
-    "term": "Abnormal R-wave progression",
-    "n": 13,
-    "p": 1.3
+    "term": "Possible left atrial abnormality",
+    "n": 14,
+    "p": 1.4
    },
    {
     "term": "early transition",
@@ -831,17 +826,22 @@ const M = {
     "p": 1.3
    },
    {
-    "term": "Sinus tachycardia.",
+    "term": "Abnormal R-wave progression",
+    "n": 13,
+    "p": 1.3
+   },
+   {
+    "term": "Possible septal infarct - age undetermined",
+    "n": 12,
+    "p": 1.2
+   },
+   {
+    "term": "Possible left anterior fascicular block",
     "n": 12,
     "p": 1.2
    },
    {
     "term": "Low voltage",
-    "n": 12,
-    "p": 1.2
-   },
-   {
-    "term": "Pacemaker rhythm - no further analysis",
     "n": 12,
     "p": 1.2
    }
@@ -850,30 +850,37 @@ const M = {
    {
     "term": "窦性心律",
     "n": 636,
-    "acc": 163,
-    "ina": 468,
-    "und": 5
+    "acc": 162,
+    "ina": 474,
+    "und": 0
    },
    {
     "term": "时期未定",
     "n": 117,
     "acc": 11,
-    "ina": 105,
-    "und": 1
+    "ina": 106,
+    "und": 0
    },
    {
     "term": "窦性心动过缓",
     "n": 87,
     "acc": 18,
-    "ina": 68,
-    "und": 1
+    "ina": 69,
+    "und": 0
    },
    {
     "term": "窦性心动过速",
     "n": 84,
-    "acc": 14,
-    "ina": 69,
-    "und": 1
+    "acc": 12,
+    "ina": 72,
+    "und": 0
+   },
+   {
+    "term": "电轴左偏",
+    "n": 61,
+    "acc": 4,
+    "ina": 57,
+    "und": 0
    },
    {
     "term": "为正常变异",
@@ -883,24 +890,10 @@ const M = {
     "und": 0
    },
    {
-    "term": "电轴左偏",
-    "n": 61,
-    "acc": 5,
-    "ina": 54,
-    "und": 2
-   },
-   {
     "term": "心电图正常",
     "n": 50,
     "acc": 19,
     "ina": 31,
-    "und": 0
-   },
-   {
-    "term": "下壁心肌梗死",
-    "n": 40,
-    "acc": 5,
-    "ina": 35,
     "und": 0
    },
    {
@@ -911,25 +904,25 @@ const M = {
     "und": 0
    },
    {
+    "term": "下壁心肌梗死",
+    "n": 40,
+    "acc": 5,
+    "ina": 35,
+    "und": 0
+   },
+   {
     "term": "由心肌缺血所致",
     "n": 38,
-    "acc": 2,
-    "ina": 36,
+    "acc": 1,
+    "ina": 37,
     "und": 0
    },
    {
     "term": "左心室肥厚",
     "n": 35,
     "acc": 4,
-    "ina": 29,
-    "und": 2
-   },
-   {
-    "term": "心电轴左偏",
-    "n": 32,
-    "acc": 7,
-    "ina": 24,
-    "und": 1
+    "ina": 31,
+    "und": 0
    },
    {
     "term": "左束支传导阻滞",
@@ -942,8 +935,15 @@ const M = {
     "term": "侧壁ST-T改变",
     "n": 32,
     "acc": 3,
-    "ina": 28,
-    "und": 1
+    "ina": 29,
+    "und": 0
+   },
+   {
+    "term": "心电轴左偏",
+    "n": 32,
+    "acc": 7,
+    "ina": 25,
+    "und": 0
    },
    {
     "term": "下壁",
@@ -953,13 +953,6 @@ const M = {
     "und": 0
    },
    {
-    "term": "右束支传导阻滞",
-    "n": 29,
-    "acc": 0,
-    "ina": 28,
-    "und": 1
-   },
-   {
     "term": "R波递增不良",
     "n": 29,
     "acc": 5,
@@ -967,17 +960,17 @@ const M = {
     "und": 0
    },
    {
+    "term": "右束支传导阻滞",
+    "n": 29,
+    "acc": 0,
+    "ina": 29,
+    "und": 0
+   },
+   {
     "term": "心房颤动",
     "n": 27,
     "acc": 6,
-    "ina": 20,
-    "und": 1
-   },
-   {
-    "term": "心电图异常",
-    "n": 25,
-    "acc": 5,
-    "ina": 20,
+    "ina": 21,
     "und": 0
    },
    {
@@ -986,17 +979,24 @@ const M = {
     "acc": 7,
     "ina": 18,
     "und": 0
+   },
+   {
+    "term": "心电图异常",
+    "n": 25,
+    "acc": 4,
+    "ina": 21,
+    "und": 0
    }
   ],
   "inaccuracy_nature": {
-   "n": 760,
+   "n": 774,
    "orig_median_terms": 3.0,
    "corr_median_terms": 3.0,
-   "corr_gt_orig": 292,
-   "corr_eq_orig": 186,
-   "corr_lt_orig": 282,
-   "pct_added_findings": 38.4,
-   "note": "专家纠正标签的中位术语数(3.0)高于原始 MIMIC 标签(3.0)，且 38.4% 的不准确案例纠正后术语更多——说明 MIMIC 高不准确率主要源于【遗漏型错误】(原始标签漏报 PtfV1、T波/ST-T 改变等次要发现)，而非【误判型错误】。这与 MIMIC 自由文本命名空间复杂、标注粒度不一致直接相关。"
+   "corr_gt_orig": 299,
+   "corr_eq_orig": 189,
+   "corr_lt_orig": 286,
+   "pct_added_findings": 38.6,
+   "note": "专家纠正标签的中位术语数(3.0)高于原始 MIMIC 标签(3.0)，且 38.6% 的不准确案例纠正后术语更多——说明 MIMIC 高不准确率主要源于【遗漏型错误】(原始标签漏报 PtfV1、T波/ST-T 改变等次要发现)，而非【误判型错误】。这与 MIMIC 自由文本命名空间复杂、标注粒度不一致直接相关。"
   },
   "label_redundancy": {
    "distinct_reports": 581,
@@ -1036,12 +1036,12 @@ const M = {
    "rows": [
     {
      "库": "MIMIC",
-     "准确": 230,
-     "不准确": 760,
-     "未判定": 10,
+     "准确": 226,
+     "不准确": 774,
+     "未判定": 0,
      "合计": 1000,
-     "不准确率%(主集)": 76.8,
-     "主分析集": 990
+     "不准确率%(主集)": 77.4,
+     "主分析集": 1000
     },
     {
      "库": "宁波",
@@ -1432,10 +1432,10 @@ const M = {
   "vocab_note": "本表为三库诊断标签对照词表，覆盖 40 个核心 ECG 诊断概念。「专家补充词汇」列标注该概念在 MIMIC 中的中文表述(report_cn)与纠正标签(correctLabel)系专家审阅时补充——MIMIC 原始库仅含英文自由文本诊断，中文术语与错误纠正标签均由本项目专家团队增补，构成跨库可比的中文诊断层。计数采用各库诊断文本的关键词命中（同一病例计 1 次），用于反映概念相对频次而非精确患病率。"
  },
  "meta": {
-  "mimic_file": "MIMIC 合并-7.17.xlsx",
+  "mimic_file": "MIMIC 合并-8.11.xlsx",
   "ningbo_file": "去重后_宁波合并_完整7.29.xlsx (623行/主集613)",
   "ptbxl_file": "PTB-XL合并-7.28.xlsx (674行)",
-  "generated": "2026-07-30"
+  "generated": "2026-08-11"
  }
 };
 const C = {pri:'#ffb454',pri2:'#ffd09a',acc:'#ff7ab6',good:'#5fe3a1',warn:'#ffd166',bad:'#ff5757',sky:'#4cc7ff',grape:'#c8a8ff',dim:'#c2b89c',ink:'#f5efdc',dim2:'#9c9580'};
@@ -1443,7 +1443,7 @@ function fmtP(x){return (x).toFixed(1)+'%';}
 function el(id){return document.getElementById(id);}
 function bgInit(){
   const cv=el('bg'),c=cv.getContext('2d');cv.width=innerWidth;cv.height=innerHeight;
-  c.fillStyle='rgba(255,180,84,0.05)';for(let i=0;i<60;i++){c.beginPath();c.arc(Math.random()*cv.width,Math.random()*cv.height,Math.random()*1.6,0,7);c.fill();}
+  c.fillStyle='rgba(37,99,235),0.05)';for(let i=0;i<60;i++){c.beginPath();c.arc(Math.random()*cv.width,Math.random()*cv.height,Math.random()*1.6,0,7);c.fill();}
 }
 function canvas(id,h){const cv=el(id);const dpr=Math.min(2,window.devicePixelRatio||1);
   const cssW=cv.clientWidth||860,cssH=h;cv.style.height=cssH+'px';
@@ -1455,7 +1455,7 @@ function txt(c,x,y,t,col,size,align){c.fillStyle=col||C.ink;c.font=(size||12)+'p
 function barsH(id,items,h,opt){opt=opt||{};const {c,w}=canvas(id,h);
   const padL=opt.padL||150,padR=58,barH=Math.min(24,(h-16)/items.length);
   const top=8,gap=(h-16-items.length*barH)/Math.max(1,items.length-1),maxv=opt.maxV||1,pw=w-padL-padR;
-  c.strokeStyle='rgba(255,255,255,0.10)';c.lineWidth=1;c.beginPath();c.moveTo(padL+0.5,top-3);c.lineTo(padL+0.5,top+items.length*(barH+gap)-gap+3);c.stroke();
+  c.strokeStyle='rgba(0,0,0,0.08)';c.lineWidth=1;c.beginPath();c.moveTo(padL+0.5,top-3);c.lineTo(padL+0.5,top+items.length*(barH+gap)-gap+3);c.stroke();
   items.forEach((it,i)=>{const y=top+i*(barH+gap)+barH/2;txt(c,padL-8,y,it.label,C.ink,12,'right');
     let bw=pw*Math.min(1,Math.max(0,it.val/maxv));const isZero=!(it.val>0);if(!isZero&&bw<4)bw=4;
     c.fillStyle=it.col||C.pri;c.fillRect(padL,top+i*(barH+gap),bw,barH);
@@ -1467,7 +1467,7 @@ function donut(id,segs){const {c,w,h}=canvas(id,300);const cx=w/2,cy=h/2,r=Math.
     c.fillStyle=s.col;c.fill();a+=ang;
     const mx=cx+Math.cos(a-ang/2)*(r+12),my=cy+Math.sin(a-ang/2)*(r+12);
     txt(c,mx,my,s.label+' '+(s.v/tot*100).toFixed(1)+'%',s.col,12,a-ang/2>Math.PI/2?'right':'left');});
-  c.beginPath();c.arc(cx,cy,r*0.55,0,7);c.fillStyle='rgba(28,31,42,0.9)';c.fill();
+  c.beginPath();c.arc(cx,cy,r*0.55,0,7);c.fillStyle='#ffffff';c.fill();
   txt(c,cx,cy-8,'n='+tot,C.ink,15,'center');txt(c,cx,cy+12,'1000 例',C.dim,11,'center');}
 // tooltip
 function tip(html,x,y){const t=el('tooltip');t.innerHTML=html;t.style.left=(x+14)+'px';t.style.top=(y+14)+'px';t.style.opacity=1;}
@@ -1475,7 +1475,7 @@ function hideTip(){el('tooltip').style.opacity=0;}
 
 function renderM1(){
   const s=M.stats,dd=M.dedup;
-  el('hdr-badge').textContent='数据底座：MIMIC 合并-7.17 · '+s.n+' 例 · 简单随机抽样';
+  el('hdr-badge').textContent='数据底座：MIMIC 合并-8.11 · '+s.n+' 例 · 简单随机抽样';
   el('m1-n').textContent=s.n;
   const acc=s.label,cl=s.correctlabel_fill;
   el('m1-tiles').innerHTML=[

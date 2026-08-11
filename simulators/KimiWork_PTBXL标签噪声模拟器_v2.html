@@ -6,40 +6,40 @@
 <title>PTB-XL 标签噪声仿真器 · 互动版</title>
 <style>
 :root{
-  --bg:#1c1f2a; --bg2:#252836;
-  --panel:rgba(40,46,62,0.72); --panel2:rgba(56,62,80,0.78);
-  --ink:#f5efdc; --dim:#c2b89c; --dim2:#9c9580;
-  --line:rgba(255,180,84,0.22);
-  --pri:#ffb454; --pri2:#ffd09a;
-  --acc:#ff7ab6; --acc2:#ffb3d6;
-  --good:#5fe3a1; --good2:#a8f0c8;
-  --warn:#ffd166;
-  --bad:#ff5757;  --bad2:#ffb0b0;
-  --sky:#4cc7ff; --sky2:#a0e1ff;
-  --grape:#c8a8ff;
-  --gold:#f5b942;
+  --bg:#f4f6fa; --bg2:#ffffff;
+  --panel:#ffffff; --panel2:#eef2f7;
+  --ink:#1f2a3a; --dim:#5b6675; --dim2:#8a93a3;
+  --line:#dbe2ec;
+  --pri:#2563eb; --pri2:#60a5fa;
+  --acc:#db2777; --acc2:#f472b6;
+  --good:#16a34a; --good2:#86efac;
+  --warn:#d97706;
+  --bad:#dc2626; --bad2:#fca5a5;
+  --sky:#0ea5e9; --sky2:#7dd3fc;
+  --grape:#7c3aed; --grape2:#c4b5fd;
+  --gold:#ca8a04;
   --font:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font);}
-body{overflow-x:hidden;background:radial-gradient(ellipse at 20% 0%,#2b2438 0%,var(--bg) 55%),radial-gradient(ellipse at 100% 100%,#2a2f3d 0%,var(--bg) 60%);}
+body{overflow-x:hidden;background:var(--bg);}
 .wrap{position:relative;z-index:1;max-width:1220px;margin:0 auto;padding:0 18px 80px;}
 header.top{position:relative;z-index:1;padding:32px 18px 6px;max-width:1220px;margin:0 auto;}
 header.top h1{font-size:30px;margin:0;letter-spacing:1px;
   background:linear-gradient(90deg,var(--pri),var(--acc),var(--good));
-  -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 22px rgba(255,180,84,0.18);}
+  -webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 22px rgba(37,99,235,0.18);}
 header.top p.sub{color:var(--dim);margin:8px 0 0;font-size:13.5px;line-height:1.7;}
 header.top .badge{display:inline-block;margin-top:10px;padding:4px 12px;border:1px solid var(--line);
-  border-radius:20px;font-size:12px;color:var(--pri);background:rgba(255,180,84,0.07);}
+  border-radius:20px;font-size:12px;color:var(--pri);background:rgba(37,99,235,0.07);}
 nav.tabs{position:sticky;top:0;z-index:5;display:flex;gap:8px;flex-wrap:wrap;
-  padding:12px 18px;margin:14px auto 0;max-width:1220px;background:rgba(28,31,42,0.86);
+  padding:12px 18px;margin:14px auto 0;max-width:1220px;background:rgba(255,255,255,0.92);
   backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
 nav.tabs button{flex:1;min-width:140px;cursor:pointer;border:1px solid var(--line);background:var(--panel);
   color:var(--dim);padding:11px 10px;border-radius:12px;font-size:13px;font-family:var(--font);transition:.18s;letter-spacing:.5px;}
 nav.tabs button .n{font-family:var(--mono);color:var(--pri);margin-right:6px;font-size:12px;}
-nav.tabs button:hover{color:var(--ink);border-color:rgba(255,180,84,0.45);}
-nav.tabs button.active{color:#2a1a05;background:linear-gradient(120deg,var(--pri),var(--pri2));border-color:transparent;box-shadow:0 0 22px rgba(255,180,84,0.35);font-weight:700;}
+nav.tabs button:hover{color:var(--ink);border-color:rgba(37,99,235,0.45);}
+nav.tabs button.active{color:#2a1a05;background:linear-gradient(120deg,var(--pri),var(--pri2));border-color:transparent;box-shadow:0 0 22px rgba(37,99,235,0.35);font-weight:700;}
 section.mod{display:none;margin-top:22px;animation:fade .4s ease;}
 section.mod.active{display:block;}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -62,7 +62,7 @@ section.mod.active{display:block;}
 svg{display:block;width:100%;height:auto;}
 #tooltip{position:fixed;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s;
   background:rgba(20,18,12,0.96);border:1px solid var(--pri);border-radius:9px;padding:9px 12px;
-  font-size:12.5px;line-height:1.55;max-width:320px;box-shadow:0 0 22px rgba(255,180,84,0.28);color:var(--ink);}
+  font-size:12.5px;line-height:1.55;max-width:320px;box-shadow:0 0 22px rgba(37,99,235,0.28);color:var(--ink);}
 #tooltip b{color:var(--pri)}
 .ctl{margin:10px 0;}
 .ctl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:5px;}
@@ -72,7 +72,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--pri);cursor:pointer;}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 .btn{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:9px 15px;border-radius:11px;font-size:13px;font-family:var(--font);transition:.15s;}
-.btn:hover{border-color:var(--pri);box-shadow:0 0 14px rgba(255,180,84,0.3);}
+.btn:hover{border-color:var(--pri);box-shadow:0 0 14px rgba(37,99,235,0.3);}
 .btn.primary{background:linear-gradient(120deg,var(--acc),var(--acc2));color:#2a0a18;border:none;font-weight:700;}
 .btn.amber{background:linear-gradient(120deg,var(--pri),var(--pri2));color:#2a1a05;border:none;font-weight:700;}
 .btn.toggle.on{background:linear-gradient(120deg,var(--good),var(--good2));color:#04210f;border:none;font-weight:700;}
@@ -87,7 +87,7 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
 footer{position:relative;z-index:1;text-align:center;color:var(--dim);font-size:12px;margin-top:40px;line-height:1.7;}
 table.vt{width:100%;border-collapse:collapse;font-size:12.5px;}
 table.vt th,table.vt td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;}
-table.vt th{background:rgba(255,180,84,0.08);color:var(--pri2);font-weight:600;position:sticky;top:0;}
+table.vt th{background:rgba(37,99,235,0.08);color:var(--pri2);font-weight:600;position:sticky;top:0;}
 table.vt tr:nth-child(even){background:rgba(255,255,255,0.02);}
 .tag-y{color:var(--warn);font-weight:700;} .tag-n{color:var(--sky);font-weight:700;}
 .scrollbox{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:12px;}

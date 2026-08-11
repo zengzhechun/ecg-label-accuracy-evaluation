@@ -6,44 +6,44 @@
 <title>心电图标签噪声模拟器 · v15</title>
 <style>
 :root{
-  --bg:#1c1f2a; --bg2:#252836;
-  --panel:rgba(40,46,62,0.72); --panel2:rgba(56,62,80,0.78);
-  --ink:#f5efdc; --dim:#c2b89c; --dim2:#9c9580;
-  --line:rgba(255,180,84,0.22);
-  --pri:#ffb454; --pri2:#ffd09a;     /* 暖琥珀 — 主色 */
-  --acc:#ff7ab6; --acc2:#ffb3d6;     /* 玫瑰粉 — 副色（账面） */
-  --good:#5fe3a1; --good2:#a8f0c8;   /* 薄荷绿 — 干净/真值（真金标准） */
-  --warn:#ffd166;                     /* 向日葵黄 — 警告 */
-  --bad:#ff5757;  --bad2:#ffb0b0;    /* 鲜红 — 危险/衰减（更鲜明） */
-  --sky:#4cc7ff; --sky2:#a0e1ff;     /* 鲜亮青蓝 — 信息/原始（Boostrap） */
-  --grape:#c8a8ff;                    /* 薰衣草 — 三色 */
-  --gold:#f5b942;                     /* 高亮金 — 中间派生变量 */
+  --bg:#f4f6fa; --bg2:#e9eef6;
+  --panel:#ffffff; --panel2:#f1f4fa;
+  --ink:#1f2a3a; --dim:#5b6675; --dim2:#8a93a3;
+  --line:rgba(37,99,235,0.18);
+  --pri:#ea8c2b; --pri2:#f4b765;     /* 暖琥珀 — 主色 */
+  --acc:#db2777; --acc2:#f9a8cf;     /* 玫瑰粉 — 副色（账面） */
+  --good:#16a34a; --good2:#86efac;   /* 薄荷绿 — 干净/真值（真金标准） */
+  --warn:#d97706;                     /* 向日葵黄 — 警告 */
+  --bad:#dc2626;  --bad2:#fca5a5;    /* 鲜红 — 危险/衰减（更鲜明） */
+  --sky:#0284c7; --sky2:#7dd3fc;     /* 鲜亮青蓝 — 信息/原始（Boostrap） */
+  --grape:#7c3aed;                    /* 薰衣草 — 三色 */
+  --gold:#ca8a04;                     /* 高亮金 — 中间派生变量 */
   --font:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font);}
-body{overflow-x:hidden;background:radial-gradient(ellipse at 20% 0%,#2b2438 0%,var(--bg) 55%),radial-gradient(ellipse at 100% 100%,#2a2f3d 0%,var(--bg) 60%);}
+body{overflow-x:hidden;background:var(--bg);}
 #bg{position:fixed;inset:0;z-index:0;opacity:0.45;}
 .wrap{position:relative;z-index:1;max-width:1220px;margin:0 auto;padding:0 18px 80px;}
 header.top{position:relative;z-index:1;padding:32px 18px 6px;max-width:1220px;margin:0 auto;}
 header.top h1{font-size:30px;margin:0;letter-spacing:1px;
   background:linear-gradient(90deg,var(--pri),var(--acc),var(--good));
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  text-shadow:0 0 22px rgba(255,180,84,0.18);}
+  text-shadow:0 0 22px rgba(37,99,235,0.18);}
 header.top p.sub{color:var(--dim);margin:8px 0 0;font-size:13.5px;line-height:1.7;}
 header.top .badge{display:inline-block;margin-top:10px;padding:4px 12px;border:1px solid var(--line);
-  border-radius:20px;font-size:12px;color:var(--pri);background:rgba(255,180,84,0.07);}
+  border-radius:20px;font-size:12px;color:var(--pri);background:rgba(37,99,235,0.07);}
 nav.tabs{position:sticky;top:0;z-index:5;display:flex;gap:8px;flex-wrap:wrap;
   padding:12px 18px;margin:14px auto 0;max-width:1220px;
-  background:rgba(28,31,42,0.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+  background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
 nav.tabs button{flex:1;min-width:160px;cursor:pointer;border:1px solid var(--line);
   background:var(--panel);color:var(--dim);padding:11px 10px;border-radius:12px;
   font-size:13.5px;font-family:var(--font);transition:.18s;letter-spacing:.5px;}
 nav.tabs button .n{font-family:var(--mono);color:var(--pri);margin-right:6px;font-size:12px;}
-nav.tabs button:hover{color:var(--ink);border-color:rgba(255,180,84,0.45);}
+nav.tabs button:hover{color:var(--ink);border-color:rgba(37,99,235,0.45);}
 nav.tabs button.active{color:#2a1a05;background:linear-gradient(120deg,var(--pri),var(--pri2));
-  border-color:transparent;box-shadow:0 0 22px rgba(255,180,84,0.35);font-weight:700;}
+  border-color:transparent;box-shadow:0 0 22px rgba(37,99,235,0.35);font-weight:700;}
 section.mod{display:none;margin-top:22px;animation:fade .4s ease;}
 section.mod.active{display:block;}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -67,7 +67,7 @@ svg{display:block;width:100%;height:auto;}
 #tooltip{position:fixed;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s;
   background:rgba(20,18,12,0.96);border:1px solid var(--pri);border-radius:9px;
   padding:9px 12px;font-size:12.5px;line-height:1.55;max-width:300px;
-  box-shadow:0 0 22px rgba(255,180,84,0.28);color:var(--ink);}
+  box-shadow:0 0 22px rgba(37,99,235,0.28);color:var(--ink);}
 #tooltip b{color:var(--pri)}
 .ctl{margin:10px 0;}
 .ctl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:5px;}
@@ -81,7 +81,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 .btn{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);
   padding:9px 15px;border-radius:11px;font-size:13px;font-family:var(--font);transition:.15s;}
-.btn:hover{border-color:var(--pri);box-shadow:0 0 14px rgba(255,180,84,0.3);}
+.btn:hover{border-color:var(--pri);box-shadow:0 0 14px rgba(37,99,235,0.3);}
 .btn.primary{background:linear-gradient(120deg,var(--acc),var(--acc2));color:#2a0a18;border:none;font-weight:700;}
 .btn.amber{background:linear-gradient(120deg,var(--pri),var(--pri2));color:#2a1a05;border:none;font-weight:700;}
 .btn.toggle.on{background:linear-gradient(120deg,var(--good),var(--good2));color:#04210f;border:none;font-weight:700;}
@@ -195,7 +195,7 @@ canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,
 
     <div class="grid" style="grid-template-columns:1.2fr 1.2fr 1.1fr;gap:14px;align-items:start;">
       <!-- ①输入层：5个滑块 -->
-      <div class="panel" style="background:rgba(255,180,84,0.04);border-color:rgba(255,180,84,0.4);">
+      <div class="panel" style="background:rgba(37,99,235,0.04);border-color:rgba(37,99,235,0.4);">
         <h3 style="color:var(--pri);">① 输入层（拖动调节）</h3>
         <div class="ctl"><label>账面灵敏度 Se<sub>app</sub> <span class="val" id="dl-v-seapp">—</span></label>
           <input type="range" id="dl-s-seapp" min="0.3" max="1" step="0.01" value="0.85"></div>
@@ -2613,7 +2613,7 @@ function initBg(){bg.width=innerWidth;bg.height=innerHeight;
   bparts=Array.from({length:80},()=>({x:Math.random()*bg.width,y:Math.random()*bg.height,
     vx:rnd(-0.25,0.25),vy:rnd(-0.25,0.25),r:rnd(0.6,2.2)}));}
 function drawBg(){bgx.clearRect(0,0,bg.width,bg.height);
-  const cols=['rgba(255,180,84,0.5)','rgba(255,122,182,0.45)','rgba(95,227,161,0.4)','rgba(126,212,255,0.4)'];
+  const cols=['rgba(37,99,235,0.5)','rgba(255,122,182,0.45)','rgba(95,227,161,0.4)','rgba(126,212,255,0.4)'];
   for(const p of bparts){p.x+=p.vx;p.y+=p.vy;
     if(p.x<0||p.x>bg.width)p.vx*=-1;if(p.y<0||p.y>bg.height)p.vy*=-1;
     bgx.beginPath();bgx.arc(p.x,p.y,p.r,0,7);bgx.fillStyle=cols[Math.floor(Math.random()*cols.length)];bgx.fill();}
@@ -2740,11 +2740,11 @@ function renderCoocHeat(){
     if(n===0) continue;
     const t=n/mx;
     // 暖色系：低=pri(琥珀) 中=warn(向日葵) 高=bad(珊瑚红)
-    const col=t>0.5?'rgba(255,122,122,'+(0.55+t*0.4)+')':t>0.2?'rgba(255,209,102,'+(0.55+t*0.4)+')':'rgba(255,180,84,'+(0.5+t*0.45)+')';
+    const col=t>0.5?'rgba(255,122,122,'+(0.55+t*0.4)+')':t>0.2?'rgba(255,209,102,'+(0.55+t*0.4)+')':'rgba(37,99,235,'+(0.5+t*0.45)+')';
     const x=pl+j*cw+1,y=pt+i*ch+1;
-    s+=`<rect x="${x}" y="${y}" width="${cw-2}" height="${ch-2}" rx="3" fill="${col}" stroke="rgba(28,31,42,0.6)" stroke-width="0.5"
+    s+=`<rect x="${x}" y="${y}" width="${cw-2}" height="${ch-2}" rx="3" fill="${col}" stroke="rgba(31,42,58,0.22)" stroke-width="0.5"
       data-d="${encodeURIComponent(dels[i])}" data-a="${encodeURIComponent(adds[j])}" data-n="${n}"/>`;
-    if(n>=8) s+=`<text x="${x+cw/2}" y="${y+ch/2+3.5}" font-size="9.5" fill="#1c1f2a" font-family="monospace" text-anchor="middle" font-weight="700">${n}</text>`;
+    if(n>=8) s+=`<text x="${x+cw/2}" y="${y+ch/2+3.5}" font-size="9.5" fill="#1f2a3a" font-family="monospace" text-anchor="middle" font-weight="700">${n}</text>`;
   }
   s+=`<text x="14" y="14" font-size="11" fill="#aea796">纵轴 = 数据库被删标签（前 15 位） · 横轴 = 专家新增标签（前 15 位） · 颜色=共现次数</text>`;
   svg.innerHTML=s;
@@ -3237,7 +3237,7 @@ function drawHist(){
   const maxc=Math.max(...cnt);const bw=W/bins;
   // 贝叶斯=暖琥珀(实色)，Bootstrap=鲜亮青蓝(实色)，对比度比之前的玫瑰高
   for(let i=0;i<bins;i++){const h=cnt[i]/maxc*(H-50);const cx=i*bw+bw/2;
-    const col=histData.mode==='bayes'?'rgba(255,180,84,0.92)':'rgba(76,199,255,0.92)';
+    const col=histData.mode==='bayes'?'rgba(37,99,235,0.92)':'rgba(76,199,255,0.92)';
     x.fillStyle=col;x.fillRect(i*bw+1,H-30-h,bw-2,h);
     // 顶部描边
     x.strokeStyle=histData.mode==='bayes'?'#ffd09a':'#a0e1ff';
@@ -3308,7 +3308,7 @@ function renderCPlot(){
   const svg=document.getElementById('c-plot');const W=1040,H=320,px=55,py=24,bw=W-px-20,bh=H-py-46;
   const metric=document.getElementById('s-metric4').value,fdr=S.fdr4,delta=S.delta,pi=S.pi;
   const X=c=>px+((c-0.5)/0.5)*bw, Y=q=>py+bh-(clamp(q,0,0.5)/0.5)*bh;
-  let s=`<rect x="${px}" y="${py}" width="${bw}" height="${bh}" fill="rgba(40,46,62,0.4)"/>`;
+  let s=`<rect x="${px}" y="${py}" width="${bw}" height="${bh}" fill="rgba(31,42,58,0.10)"/>`;
   let path='';for(let c=0.5;c<=1.0001;c+=0.01){const q=qfnMaxFor(metric,c,pi,fdr,delta);
     path+=(c===0.5?'M':'L')+X(c)+' '+Y(q)+' ';}
   s+=`<path d="${path}" fill="none" stroke="#5fe3a1" stroke-width="2.5"/>`;
@@ -3408,7 +3408,7 @@ function pdBarsH(items,h,opt){ /* items:[{label,val,col,sub}] val in 0..1 */
   const maxv=opt.maxV||1;
   const plotW=w-padL-padR;
   /* 零轴基线（避免无柱时画面"空"到看不出坐标） */
-  c.strokeStyle='rgba(255,255,255,0.13)';c.lineWidth=1;c.beginPath();
+  c.strokeStyle='rgba(31,42,58,0.12)';c.lineWidth=1;c.beginPath();
   c.moveTo(padL+0.5,top-3);c.lineTo(padL+0.5,top+items.length*(barH+gap)-gap+3);c.stroke();
   items.forEach((it,i)=>{
     const y=top+i*(barH+gap)+barH/2;
@@ -3430,7 +3430,7 @@ function pdBarsH(items,h,opt){ /* items:[{label,val,col,sub}] val in 0..1 */
            inside?'#1a1d29':(isZero?PD_DIM:PD_TXT), 11, inside?'right':'left');
   });
 }
-function pdGridBox(c,x,y,ww,hh){c.strokeStyle='rgba(255,255,255,0.08)';c.strokeRect(x,y,ww,hh);}
+function pdGridBox(c,x,y,ww,hh){c.strokeStyle='rgba(31,42,58,0.10)';c.strokeRect(x,y,ww,hh);}
 function pdLegend(c,items,x,y){let cx=x;items.forEach(it=>{c.fillStyle=it.col;c.fillRect(cx,y-5,10,10);
   pdText(c,cx+14,y,it.t,PD_DIM,11,'left');cx+=14+it.t.length*7+18;});}
 
