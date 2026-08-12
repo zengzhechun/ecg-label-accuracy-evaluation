@@ -82,9 +82,20 @@ open index.html        # macOS
 本仓库已启用 GitHub Pages（发布自 `main` 分支根目录）：
 
 - **门户首页：** https://zengzhechun.github.io/ecg-label-accuracy-evaluation/
-- **各报告/模拟器：** 在上述首页点击卡片即可，或直接使用以下链接：
-  - 报告： `https://zengzhechun.github.io/ecg-label-accuracy-evaluation/reports/<文件名>`
-  - 模拟器： `https://zengzhechun.github.io/ecg-label-accuracy-evaluation/simulators/<文件名>`
+- **门户源码（GitHub 浏览）：** https://github.com/zengzhechun/ecg-label-accuracy-evaluation/blob/main/index.html
+- **仓库主页：** https://github.com/zengzhechun/ecg-label-accuracy-evaluation
+
+各报告/模拟器可直接使用以下链接（在门户首页点击卡片亦可）：
+
+| 类型 | 文件 | GitHub Pages（在线打开） | GitHub 源码（blob） |
+|---|---|---|---|
+| 门户 | `index.html` | https://zengzhechun.github.io/ecg-label-accuracy-evaluation/ | https://github.com/zengzhechun/ecg-label-accuracy-evaluation/blob/main/index.html |
+| 模拟器 | `simulators/KimiWork_MIMIC_标签噪声模拟器.html` | https://zengzhechun.github.io/ecg-label-accuracy-evaluation/simulators/KimiWork_MIMIC_%E6%A0%87%E7%AD%BE%E5%99%AA%E5%A3%B0%E6%A8%A1%E6%8B%9F%E5%99%A8.html | https://github.com/zengzhechun/ecg-label-accuracy-evaluation/blob/main/simulators/KimiWork_MIMIC_%E6%A0%87%E7%AD%BE%E5%99%AA%E5%A3%B0%E6%A8%A1%E6%8B%9F%E5%99%A8.html |
+| 模拟器 | `simulators/KimiWork_v15_标签噪声模拟器.html` | https://zengzhechun.github.io/ecg-label-accuracy-evaluation/simulators/KimiWork_v15_%E6%A0%87%E7%AD%BE%E5%99%AA%E5%A3%B0%E6%A8%A1%E6%8B%9F%E5%99%A8.html | https://github.com/zengzhechun/ecg-label-accuracy-evaluation/blob/main/simulators/KimiWork_v15_%E6%A0%87%E7%AD%BE%E5%99%AA%E5%A3%B0%E6%A8%A1%E6%8B%9F%E5%99%A8.html |
+| 模拟器 | `simulators/KimiWork_PTBXL标签噪声模拟器_v2.html` | https://zengzhechun.github.io/ecg-label-accuracy-evaluation/simulators/KimiWork_PTBXL%E6%A0%87%E7%AD%BE%E5%99%AA%E5%A3%B0%E6%A8%A1%E6%8B%9F%E5%99%A8_v2.html | https://github.com/zengzhechun/ecg-label-accuracy-evaluation/blob/main/simulators/KimiWork_PTBXL%E6%A0%87%E7%AD%BE%E5%99%AA%E5%A3%B0%E6%A8%A1%E6%8B%9F%E5%99%A8_v2.html |
+| 报告 | `reports/<文件名>` | https://zengzhechun.github.io/ecg-label-accuracy-evaluation/reports/&lt;文件名&gt; | https://github.com/zengzhechun/ecg-label-accuracy-evaluation/blob/main/reports/&lt;文件名&gt; |
+
+> 说明：模拟器为纯前端单文件，无需联网即可运行；在线/本地打开效果一致。上述三个模拟器已于本次更新统一修正**浅色背景、深可读文字、坐标轴标签完整显示**等界面问题。
 
 > 注意：部分报告内部会链接到对应的 `.docx` Word 版（未上传，避免体积过大），在线打开这些链接会 404；本地仓库若放有对应 docx 则可正常打开。
 

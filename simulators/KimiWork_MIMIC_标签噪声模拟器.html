@@ -8,7 +8,7 @@
 :root{
   --bg:#f4f6fa; --bg2:#ffffff;
   --panel:#ffffff; --panel2:#eef2f7;
-  --ink:#1f2a3a; --dim:#5b6675; --dim2:#8a93a3;
+  --ink:#1f2a3a; --dim:#3a4a5c; --dim2:#64748b;
   --line:#dbe2ec;
   --pri:#2563eb; --pri2:#60a5fa;
   --acc:#db2777; --acc2:#f472b6;
@@ -30,10 +30,10 @@ header.top{position:relative;z-index:1;padding:32px 18px 6px;max-width:1220px;ma
 header.top h1{font-size:29px;margin:0;letter-spacing:1px;
   background:linear-gradient(90deg,var(--pri),var(--sky),var(--good));
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  text-shadow:0 0 22px rgba(37,99,235),0.18);}
+  text-shadow:0 0 22px rgba(37,99,235,0.18);}
 header.top p.sub{color:var(--dim);margin:8px 0 0;font-size:13.5px;line-height:1.7;}
 header.top .badge{display:inline-block;margin-top:10px;padding:4px 12px;border:1px solid var(--line);
-  border-radius:20px;font-size:12px;color:var(--pri);background:rgba(37,99,235,0.08);
+  border-radius:20px;font-size:12px;color:var(--pri);background:rgba(37,99,235,0.08);}
 nav.tabs{position:sticky;top:0;z-index:5;display:flex;gap:8px;flex-wrap:wrap;
   padding:12px 18px;margin:14px auto 0;max-width:1220px;
   background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
@@ -41,9 +41,9 @@ nav.tabs button{flex:1;min-width:150px;cursor:pointer;border:1px solid var(--lin
   background:var(--panel);color:var(--dim);padding:11px 10px;border-radius:12px;
   font-size:13.5px;font-family:var(--font);transition:.18s;letter-spacing:.5px;}
 nav.tabs button .n{font-family:var(--mono);color:var(--pri);margin-right:6px;font-size:12px;}
-nav.tabs button:hover{color:var(--ink);border-color:rgba(37,99,235),0.45);}
+nav.tabs button:hover{color:var(--ink);border-color:rgba(37,99,235,0.45);}
 nav.tabs button.active{color:#2a1a05;background:linear-gradient(120deg,var(--pri),var(--pri2));
-  border-color:transparent;box-shadow:0 0 22px rgba(37,99,235),0.35);font-weight:700;}
+  border-color:transparent;box-shadow:0 0 22px rgba(37,99,235,0.35);font-weight:700;}
 section.mod{display:none;margin-top:22px;animation:fade .4s ease;}
 section.mod.active{display:block;}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -74,7 +74,7 @@ svg{display:block;width:100%;height:auto;}
 .ctl label .val{font-family:var(--mono);color:var(--pri);font-weight:700;}
 .btn{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);
   padding:9px 15px;border-radius:11px;font-size:13px;font-family:var(--font);transition:.15s;}
-.btn:hover{border-color:var(--pri);box-shadow:0 0 14px rgba(37,99,235),0.3);}
+.btn:hover{border-color:var(--pri);box-shadow:0 0 14px rgba(37,99,235,0.3);}
 .btn.amber{background:linear-gradient(120deg,var(--pri),var(--pri2));color:#2a1a05;border:none;font-weight:700;}
 .btn.toggle.on{background:linear-gradient(120deg,var(--good),var(--good2));color:#04210f;border:none;font-weight:700;}
 select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;
@@ -95,7 +95,8 @@ table.tbl td.num{font-family:var(--mono);text-align:right;}
   background:rgba(200,168,255,0.18);color:var(--grape);border:1px solid rgba(200,168,255,0.4);}
 .search{width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);
   background:var(--panel2);color:var(--ink);font-size:13px;font-family:var(--font);margin-bottom:10px;}
-canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(10,12,18,0.55);}
+canvas.viz{width:100%;display:block;border-radius:12px;background:rgba(37,99,235,0.04);}
+svg{overflow:visible;}
 footer{position:relative;z-index:1;text-align:center;color:var(--dim);font-size:12px;margin-top:40px;line-height:1.7;}
 @media(max-width:760px){header.top h1{font-size:22px}.tiles{grid-template-columns:repeat(2,1fr)}}
 /* ===== 中/英双语切换 ===== */
@@ -1474,12 +1475,12 @@ const M = {
   "generated": "2026-08-11"
  }
 };
-const C = {pri:'#ffb454',pri2:'#ffd09a',acc:'#ff7ab6',good:'#5fe3a1',warn:'#ffd166',bad:'#ff5757',sky:'#4cc7ff',grape:'#c8a8ff',dim:'#c2b89c',ink:'#f5efdc',dim2:'#9c9580'};
+const C = {pri:'#2563eb',pri2:'#60a5fa',acc:'#db2777',good:'#16a34a',warn:'#d97706',bad:'#dc2626',sky:'#0ea5e9',grape:'#7c3aed',dim:'#475569',ink:'#1f2a3a',dim2:'#64748b'};
 function fmtP(x){return (x).toFixed(1)+'%';}
 function el(id){return document.getElementById(id);}
 function bgInit(){
   const cv=el('bg'),c=cv.getContext('2d');cv.width=innerWidth;cv.height=innerHeight;
-  c.fillStyle='rgba(37,99,235),0.05)';for(let i=0;i<60;i++){c.beginPath();c.arc(Math.random()*cv.width,Math.random()*cv.height,Math.random()*1.6,0,7);c.fill();}
+  c.fillStyle='rgba(37,99,235,0.05)';for(let i=0;i<60;i++){c.beginPath();c.arc(Math.random()*cv.width,Math.random()*cv.height,Math.random()*1.6,0,7);c.fill();}
 }
 function canvas(id,h){const cv=el(id);const dpr=Math.min(2,window.devicePixelRatio||1);
   const cssW=cv.clientWidth||860,cssH=h;cv.style.height=cssH+'px';
@@ -1488,8 +1489,11 @@ function canvas(id,h){const cv=el(id);const dpr=Math.min(2,window.devicePixelRat
   return {c,w:cssW,h:cssH};}
 function txt(c,x,y,t,col,size,align){c.fillStyle=col||C.ink;c.font=(size||12)+'px '+getComputedStyle(document.body).fontFamily;
   c.textAlign=align||'left';c.textBaseline='middle';c.fillText(t,x,y);}
+let _mcw;function labelW(t,size){if(!_mcw)_mcw=document.createElement('canvas').getContext('2d');
+  _mcw.font=(size||12)+'px -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Helvetica,Arial,sans-serif';return _mcw.measureText(t||'').width;}
 function barsH(id,items,h,opt){opt=opt||{};const {c,w}=canvas(id,h);
-  const padL=opt.padL||150,padR=58,barH=Math.min(24,(h-16)/items.length);
+  let padL=opt.padL||150;items.forEach(it=>{const lw=labelW(it.label,12);if(padL<lw+12)padL=lw+12;});
+  const padR=58,barH=Math.min(24,(h-16)/items.length);
   const top=8,gap=(h-16-items.length*barH)/Math.max(1,items.length-1),maxv=opt.maxV||1,pw=w-padL-padR;
   c.strokeStyle='rgba(0,0,0,0.08)';c.lineWidth=1;c.beginPath();c.moveTo(padL+0.5,top-3);c.lineTo(padL+0.5,top+items.length*(barH+gap)-gap+3);c.stroke();
   items.forEach((it,i)=>{const y=top+i*(barH+gap)+barH/2;txt(c,padL-8,y,it.label,C.ink,12,'right');
