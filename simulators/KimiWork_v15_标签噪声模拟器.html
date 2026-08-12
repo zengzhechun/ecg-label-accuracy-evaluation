@@ -3166,9 +3166,9 @@ function renderM3(){
     const baseY=y+4;
     // 行标签（左侧固定区）
     s+=`<text x="${px-8}" y="${baseY+11}" font-size="11.5" fill="var(--ink)" text-anchor="end" font-weight="600">${k}</text>`;
-    // 背景轨（淡蓝灰）
-    s+=`<rect x="${px}" y="${baseY}" width="${halfW}" height="22" rx="5" fill="#1c2740" stroke="#3a4a6a" stroke-width="0.5"/>`;
-    s+=`<rect x="${px+halfW+10}" y="${baseY}" width="${halfW}" height="22" rx="5" fill="#1c2740" stroke="#3a4a6a" stroke-width="0.5"/>`;
+    // 背景轨（浅色 slate，与全站浅色主题一致）
+    s+=`<rect x="${px}" y="${baseY}" width="${halfW}" height="22" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5"/>`;
+    s+=`<rect x="${px+halfW+10}" y="${baseY}" width="${halfW}" height="22" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5"/>`;
     // 账面（玫瑰）柱
     s+=`<rect x="${px}" y="${baseY}" width="${wAa}" height="22" rx="5" fill="#ff7ab6" stroke="#ffd0e6" stroke-width="1.5" opacity="0.95"/>`;
     // 真金标准（薄荷绿）柱
