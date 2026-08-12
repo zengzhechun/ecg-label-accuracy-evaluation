@@ -3174,7 +3174,7 @@ function renderM3(){
     // 真金标准（薄荷绿）柱
     s+=`<rect x="${px+halfW+10}" y="${baseY}" width="${wTt}" height="22" rx="5" fill="#5fe3a1" stroke="#c9f3da" stroke-width="1.5" opacity="0.95"/>`;
     // 数值（柱内白色文字 vs 柱外补位）
-    s+=`<text x="${px+Math.min(wAa+6,halfW-4)}" y="${baseY+15}" font-size="11" font-family="monospace" fill="#fff" font-weight="700">${a.app[k].toFixed(2)}</text>`;
+    s+=`<text x="${px+Math.min(wAa+6,halfW-4)}" y="${baseY+15}" font-size="11" font-family="monospace" fill="#ffd166" stroke="#1c2740" stroke-width="0.6" paint-order="stroke" font-weight="700">${a.app[k].toFixed(2)}</text>`;
     s+=`<text x="${px+halfW+10+Math.min(wTt+6,halfW-4)}" y="${baseY+15}" font-size="11" font-family="monospace" fill="#062419" font-weight="700">${a.tru[k].toFixed(2)}</text>`;
     // 衰减（行最右）
     s+=`<rect x="${W-72}" y="${baseY+1}" width="64" height="20" rx="6" fill="${Math.abs(att)<0.005?'#3a4a6a':'#ff5757'}" opacity="${Math.abs(att)<0.005?0.3:0.92}"/>`;
