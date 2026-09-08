@@ -2416,13 +2416,37 @@ window.Quarto = {
 
 
 <style>
-/* 表 2 放大补丁（v1.0 用户反馈：原表 4.5pt 太小） */
-.cell.big-t2 table.cl-375811ea { table-layout: auto !important; width: 100% !important; max-width: none !important; }
-.cell.big-t2 table.cl-375811ea caption p { font-size: 13pt !important; line-height: 1.55 !important; padding-bottom: 8pt; }
+/* 表 2 全宽放大补丁 v2（用户反馈：之前只放大单元格，容器还是被 Quarto 默认 .cell 宽度限制，缩在左半边） */
+.cell.big-t2 {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  grid-column: 1 / -1 !important;
+}
+.cell.big-t2 > p[style*="text-shadow"] {  /* 段落式表题 */
+  max-width: none !important;
+  width: 100% !important;
+  font-size: 13pt !important;
+  line-height: 1.55 !important;
+  padding-bottom: 8pt;
+}
+.cell.big-t2 table.cl-375811ea {
+  table-layout: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+.cell.big-t2 table.cl-375811ea caption p {
+  font-size: 13pt !important;
+  line-height: 1.55 !important;
+  padding-bottom: 8pt;
+}
 .cell.big-t2 .cl-37556120 { font-size: 12.5pt !important; line-height: 1.45 !important; }
 .cell.big-t2 .cl-375671c8 { padding: 8pt 10pt !important; line-height: 1.45 !important; }
-.cell.big-t2 th, .cell.big-t2 td { min-width: 1.1in !important; }
-.cell.big-t2 th[rowspan], .cell.big-t2 td[rowspan] { min-width: 1.3in !important; }
+.cell.big-t2 th, .cell.big-t2 td { min-width: 1.05in !important; }
+.cell.big-t2 th[rowspan], .cell.big-t2 td[rowspan] { min-width: 1.25in !important; }
 .cell.big-t2 table.cl-375811ea th, .cell.big-t2 table.cl-375811ea td {
   border-bottom: 0.5pt solid rgba(180,180,180,0.55) !important;
 }
@@ -2432,6 +2456,8 @@ window.Quarto = {
   font-weight: 600 !important;
   background: #f3f6fb !important;
 }
+/* 兜底：让表 2 不受 main 内部 grid 列宽限制 */
+main.content.column-page-right > * { min-width: 0; }
 </style>
 </head>
 
