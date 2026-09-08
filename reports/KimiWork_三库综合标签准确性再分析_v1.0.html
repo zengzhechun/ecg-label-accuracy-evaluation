@@ -2414,6 +2414,25 @@ window.Quarto = {
 };
 </script>
 
+
+<style>
+/* 表 2 放大补丁（v1.0 用户反馈：原表 4.5pt 太小） */
+.cell.big-t2 table.cl-375811ea { table-layout: auto !important; width: 100% !important; max-width: none !important; }
+.cell.big-t2 table.cl-375811ea caption p { font-size: 13pt !important; line-height: 1.55 !important; padding-bottom: 8pt; }
+.cell.big-t2 .cl-37556120 { font-size: 12.5pt !important; line-height: 1.45 !important; }
+.cell.big-t2 .cl-375671c8 { padding: 8pt 10pt !important; line-height: 1.45 !important; }
+.cell.big-t2 th, .cell.big-t2 td { min-width: 1.1in !important; }
+.cell.big-t2 th[rowspan], .cell.big-t2 td[rowspan] { min-width: 1.3in !important; }
+.cell.big-t2 table.cl-375811ea th, .cell.big-t2 table.cl-375811ea td {
+  border-bottom: 0.5pt solid rgba(180,180,180,0.55) !important;
+}
+.cell.big-t2 table.cl-375811ea thead th {
+  border-top: 1.5pt solid rgba(102,102,102,1) !important;
+  border-bottom: 1.5pt solid rgba(102,102,102,1) !important;
+  font-weight: 600 !important;
+  background: #f3f6fb !important;
+}
+</style>
 </head>
 
 <body class="quarto-light">
@@ -3227,7 +3246,7 @@ padding-left: 8px;
 <h1>4 各库标签质量的解剖：遗漏与误标（结果 3）</h1>
 <p>本节对三库均构建逐诊断概念的四格表，量化遗漏率（qfn）与误标率（fdr）。宁波（中文受控词表，最新 623 例全判）直接按 39 项受控概念构建；PTB-XL 由既有分析提供逐 SCP 码四格表，并经概念对照表映射到同一概念集；MIMIC 的原始标签为自由文本报告，先经受控词表关键词命中（对英文 <code>report</code> 与中文 <code>report_cn</code> 双侧检索，并按否定语境窗口剔除「未见」「除外」一类否定表述）转换为概念级存在性判断，再与专家校正标签 <code>correctLabel</code> 比对构建四格表，详见 §1.4。</p>
 <p>三库逐标签噪声指标汇总见表 2。统一概念集下，MIMIC 的遗漏率 33.8% 与误标率 16.7% 均落在宁波（1.7% / 65.0%）与 PTB-XL（62.2% / 37.7%）之间，三库一致呈现遗漏主导型噪声。MIMIC 的四格表覆盖 28 个在其自由文本或专家校正标签中实际出现的受控概念（另 11 个概念在该库全为真阴性，不参与率的计算），其数值属受控词表视角的近似估计，量级可比但不宜与另两库逐位小数比较。</p>
-<div class="cell" data-layout-align="center">
+<div class="cell big-t2" data-layout-align="center">
 <p style="margin: 1.2em 0 0.5em 0; font-weight: 700; font-size: 1.02em; color: #1A1A1A; text-shadow: 1.5px 1.5px 3px rgba(0,0,0,0.25);">
 <strong>表 2. 三库逐标签噪声指标汇总（四格表派生）。三库均按统一的 39 项受控诊断概念构建「数据库标签 × 专家金标准」四格表：宁波直接由中文受控词表构建，PTB-XL 由 SCP 码经概念对照表映射，MIMIC 由自由文本经受控词表关键词命中（含否定语境过滤）转换为概念级存在性判断后构建。qfn = FN/(TP+FN)，fdr = FP/(TP+FP)，单元级错误率 = (FP+FN)/(TP+FP+FN)。MIMIC 的四格表属受控词表视角的近似估计，量级可比但不宜逐位小数比较。</strong>
 </p>
