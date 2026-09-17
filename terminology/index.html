@@ -52,7 +52,16 @@ code{background:#eef2f7;border-radius:4px;padding:0 3px;font-size:11px}
 .enterm{color:var(--acc);font-size:11.5px;font-style:italic;margin-top:1px}
 .col1{width:15%}.col2{width:13%}.col3{width:13%}.col4{width:13%}.col5{width:20%}.col6{width:26%}
 footer{color:var(--mut);font-size:11.5px;padding:18px 28px}
-</style></head><body>
+</style>
+/* === 全量 MIMIC 折叠（注入，独立于 Excel 再生成） === */
+details.fulldb{margin:6px 0 2px;border:1px solid #d7e3f4;border-radius:6px;background:#f5f9ff;overflow:hidden}
+details.fulldb>summary.fulldb-sum{cursor:pointer;list-style:none;padding:5px 9px;font-size:12px;font-weight:600;color:#1565c0;display:flex;align-items:center;gap:6px;user-select:none}
+details.fulldb>summary.fulldb-sum::-webkit-details-marker{display:none}
+details.fulldb>summary .fulldb-ico{display:inline-block;transition:transform .15s ease;font-size:10px;line-height:1}
+details.fulldb[open]>summary .fulldb-ico{transform:rotate(90deg)}
+details.fulldb>summary:hover{background:#eaf2fd}
+details.fulldb .dbblock{margin:6px 9px 9px}
+</head><body>
 <header><h1>心电图诊断术语四方交叉映射表</h1>
 <p>以 <b>《中英文标准化心电图首要诊断术语中国专家共识》标准术语表</b> 为骨架（137 条，含专家补充 8 条与三库特有 4 条），逐条对照 <b>AHA 2007 Part II</b>、<b>SCP-ECG / PTB-XL</b> 与 <b>日本 2021 自动诊断命名共识</b>。</p>
 <p>左侧以中文专家共识术语为骨架，展示 <b>中文共识 ↔ AHA 2007 Part II ↔ SCP-ECG ↔ 日本 2021</b> 四大标准之间的词汇映射；右侧扩充专家评审同义词与三库（宁波 / MIMIC / PTB-XL）词汇统一化记录。</p>
@@ -380,4 +389,42 @@ footer{color:var(--mut);font-size:11.5px;padding:18px 28px}
 <tr><td><span class='en'>Ventricular premature contractions (short run)</span></td><td class='ja'>心室性期外収縮（短時間連発）</td><td class='zh'>This diagnostic statement is included in non-sustained ventricular tachycardia.</td></tr>
 </tbody></table>
 <footer>骨架：中英文标准化心电图首要诊断术语中国专家共识（中国循环杂志 2023;38:141，标准 125 条）+ 本研究专家补充 8 条 + 三库特有 4 条 = 137 条。对照标准：AHA/ACCF/HRS 2007 Part II（JACC 2009;49:1128）；PTB-XL scp_statements.csv（SCP-ECG / ISO 41064）；Katoh T et al. J Arrhythm 2021;37:871（日本 2021）。专家评审同义词与三库词汇统一化记录来自配套术语表。标准映射为语义自动匹配 + 人工校核。</footer>
-</div></body></html>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  function wrapFullDb(cell){
+    var dbs = cell.querySelectorAll('div.dbblock');
+    var full = [];
+    var hasP = false, hasQ = false;
+    dbs.forEach(function(d){
+      var tag = d.querySelector('span.dbtag');
+      if(tag && /全量/.test(tag.textContent)){
+        full.push(d);
+        if(/MIMIC全量/.test(tag.textContent)) hasP = true;
+        if(/PTB-XL全量/.test(tag.textContent)) hasQ = true;
+      }
+    });
+    if(full.length === 0) return;
+    var last = full[full.length-1];
+    var anchor = last.nextSibling;           // stable ref still in cell (non-full node or null)
+    var det = document.createElement('details');
+    det.className = 'fulldb';
+    var sum = document.createElement('summary');
+    sum.className = 'fulldb-sum';
+    var parts = [];
+    if(hasP) parts.push('MIMIC');
+    if(hasQ) parts.push('PTB-XL');
+    sum.innerHTML = "<span class='fulldb-ico'>&#9656;</span> 全量 " + parts.join(' / ');
+    det.appendChild(sum);
+    sum.addEventListener('click', function(e){ e.preventDefault(); det.open = !det.open; });
+    full.forEach(function(d){ det.appendChild(d); });   // moves them into det (out of cell)
+    cell.insertBefore(det, anchor);
+  }
+  document.querySelectorAll('tr').forEach(function(tr){
+    var tds = tr.querySelectorAll(':scope > td');
+    if(tds.length < 6) return;
+    wrapFullDb(tds[5]);
+  });
+});
+</script>
+</body></html>
